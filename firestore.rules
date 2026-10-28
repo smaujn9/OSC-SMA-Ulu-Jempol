@@ -49,7 +49,7 @@ service cloud.firestore {
         getUserRole() in [
           'Admin Utama', 'ADMIN UTAMA', 'Admin', 'ADMIN', 'Pengetua', 'Guru Besar', 'Penolong Kanan Pentadbiran',
           'Penolong Kanan HEM', 'Penolong Kanan Kokurikulum', 'GKMP', 'Guru Kanan',
-          'Guru', 'GURU', 'Kaunselor', 'Staf Sokongan', 'AKP', 'YDP PIBG', 'NYDP PIBG',
+          'Guru', 'GURU', 'KPM/JPN/NAZIR/PPD', 'Kaunselor', 'Staf Sokongan', 'AKP', 'YDP PIBG', 'NYDP PIBG',
           'Setiausaha PIBG', 'Bendahari PIBG', 'AJK PIBG',
           'Pengerusi', 'Naib Pengerusi', 'Setiausaha', 'Bendahari', 'AJK'
         ]
@@ -59,7 +59,7 @@ service cloud.firestore {
     function isAdminUtama() {
       return isSignedIn() && (
         isUserSuperAdmin() ||
-        getUserRole() in ['Admin Utama', 'ADMIN UTAMA', 'Admin', 'Pengetua']
+        getUserRole() in ['Admin Utama', 'ADMIN UTAMA', 'Admin', 'ADMIN', 'Pengetua']
       );
     }
 

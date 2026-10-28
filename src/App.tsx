@@ -47,7 +47,7 @@ const getRouteFromPath = (path: string, userRole?: string) => {
   if (cleanPath === '/pengumuman') return { desktop: 'pengumuman', mobile: 'pengumuman' };
   if (cleanPath === '/lain-lain' || cleanPath === '/lain_lain_view') return { desktop: 'lain-lain', mobile: 'lain_lain_view' };
   if (cleanPath === '/pengeluaran') return { desktop: 'pengeluaran', mobile: 'pengeluaran' };
-  if (cleanPath === '/daftar' || cleanPath === '/daftar-ahli') return { desktop: 'daftar-ahli', mobile: 'daftar-ahli' };
+  if (cleanPath === '/daftar' || cleanPath === '/daftar-ahli') return { desktop: 'dashboard', mobile: 'utama' };
   if (cleanPath === '/ajk' || cleanPath === '/ahli-jawatankuasa') {
     return { desktop: 'ahli', mobile: 'ahli' };
   }

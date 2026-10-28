@@ -182,6 +182,9 @@ export default function MobileView({
   const userRole = (currentUserDoc?.role || 'TETAMU').toUpperCase();
   const isAdminUtama = Boolean(
     userRole === 'ADMIN UTAMA' ||
+    userRole === 'ADMIN' ||
+    currentUserDoc?.role === 'ADMIN UTAMA' ||
+    currentUserDoc?.role === 'ADMIN' ||
     currentUserDoc?.isSuperAdmin === true ||
     (currentUserDoc?.email && currentUserDoc.email.toLowerCase().trim() === 'g-59129199@moe-dl.edu.my') ||
     (firebaseUser?.email && firebaseUser.email.toLowerCase().trim() === 'g-59129199@moe-dl.edu.my')
@@ -190,6 +193,7 @@ export default function MobileView({
   const isGuru = userRole === 'GURU';
   const isMurid = userRole === 'MURID';
   const isIbuBapa = userRole === 'IBU BAPA';
+  const isKpm = userRole === 'KPM/JPN/NAZIR/PPD';
   const isTetamu = !firebaseUser || firebaseUser.isAnonymous || firebaseUser.uid === 'guest_local' || userRole === 'TETAMU' || userRole === 'PELAWAT';
 
   const isApprovedMember = Boolean(
@@ -197,6 +201,7 @@ export default function MobileView({
     isGuru ||
     isMurid ||
     isIbuBapa ||
+    isKpm ||
     (!isKuiriUser && (
       currentUserDoc?.membershipStatus === 'Aktif' || 
       currentUserDoc?.membershipStatus === 'Active' ||
@@ -355,29 +360,20 @@ export default function MobileView({
         <Lock size={20} />
       </div>
       <div className="space-y-1">
-        <h3 className="text-sm font-black text-slate-950 uppercase tracking-tight">AKSES DITOLAK</h3>
+        <h3 className="text-sm font-black text-slate-950 uppercase tracking-tight">AKSES TERHAD: PERANAN TETAMU</h3>
         <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-          Halaman ini hanya boleh diakses oleh ahli berstatus <span className="text-emerald-600 font-bold">Aktif</span> sahaja.
+          Halaman ini memerlukan peranan sah sekolah (ADMIN, GURU, MURID, IBU BAPA, atau KPM/JPN/NAZIR/PPD).
         </p>
       </div>
-      <div className="bg-slate-50 rounded-xl p-2.5 text-[9px] text-slate-500 font-bold border border-slate-100">
-        Sila lengkapkan pendaftaran keahlian anda di tab <span className="font-extrabold text-indigo-600">Daftar Ahli</span> untuk mendapatkan kelulusan rasmi.
-      </div>
-      <div className="bg-amber-50/80 rounded-xl p-2.5 text-[9px] text-amber-900 font-semibold border border-amber-200/80 text-left">
-        💡 <strong>1 Rumah 1 Pendaftaran Sahaja:</strong> Cukup seorang wakil mendaftar bagi setiap rumah. Semua nama dalam <em>Senarai Isi Rumah</em> automatik diiktiraf sebagai ahli persatuan.
+      <div className="bg-slate-50 rounded-xl p-2.5 text-[9px] text-slate-600 font-bold border border-slate-100">
+        Peranan akaun anda pada masa ini adalah <span className="font-extrabold text-indigo-600">TETAMU</span>. Pentadbir Sekolah (ADMIN UTAMA) akan menetapkan peranan anda dalam sistem.
       </div>
       <div className="flex gap-2 w-full">
         <button
           onClick={() => setCurrentTab('utama')}
-          className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-extrabold rounded-lg transition-all"
+          className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-extrabold rounded-lg shadow-xs transition-all"
         >
-          UTAMA
-        </button>
-        <button
-          onClick={() => setCurrentTab('daftar-ahli')}
-          className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-extrabold rounded-lg shadow-xs transition-all"
-        >
-          DAFTAR AHLI
+          KEMBALI KE UTAMA
         </button>
       </div>
     </div>
@@ -1089,7 +1085,7 @@ export default function MobileView({
     { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone, color: 'text-pink-600 bg-pink-50', locked: !isAhliAktif },
     { id: 'takwim', label: 'Takwim', icon: Calendar, color: 'text-indigo-600 bg-indigo-50', locked: !isAhliAktif },
     { id: 'sumbangan', label: 'Sumbangan', icon: Heart, color: 'text-rose-600 bg-rose-50', locked: false },
-    { id: 'daftar-ahli', label: 'Daftar Ahli', icon: UserPlus, color: 'text-teal-600 bg-teal-50' },
+    { id: 'chat', label: 'Chat Komuniti', icon: MessageSquare, color: 'text-teal-600 bg-teal-50' },
     { id: 'ahli', label: 'Ahli Jawatankuasa', icon: User, color: 'text-violet-600 bg-violet-50' },
     { id: 'admin', label: 'Panel Admin', icon: Shield, color: 'text-blue-600 bg-blue-50', locked: !hasAdminAccess },
     { id: 'lain-lain', label: 'Lain-lain', icon: ChevronRight, color: 'text-slate-600 bg-slate-50' },

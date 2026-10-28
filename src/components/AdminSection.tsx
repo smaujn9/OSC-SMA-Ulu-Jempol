@@ -40,6 +40,7 @@ const getDynamicAge = (enteredAgeStr: string, baseYear: number | undefined): str
 
 export default function AdminSection({ isMobile = false, onBack, onNavigateToUrusQurban }: AdminSectionProps) {
   const { 
+    firebaseUser,
     currentUserDoc, 
     allUsers, 
     allApplications, 
@@ -60,16 +61,12 @@ export default function AdminSection({ isMobile = false, onBack, onNavigateToUru
     logAction
   } = useAuth();
 
-  const isSuperAdmin = currentUserDoc?.role === 'Admin Utama' || currentUserDoc?.role === 'ADMIN UTAMA' || currentUserDoc?.isSuperAdmin === true || currentUserDoc?.email?.toLowerCase() === 'g-59129199@moe-dl.edu.my';
-  const isManagementAdmin = isSuperAdmin || ['Setiausaha', 'Naib Setiausaha', 'Penolong Setiausaha', 'Bendahari', 'Pengerusi', 'GURU', 'Guru'].includes(currentUserDoc?.role || '');
-  // Pengerusi, Setiausaha dan peranan bukan Admin Utama hanya dibenarkan melihat tab Permohonan Keahlian sahaja
-  const isPermohonanOnlyRole = !isSuperAdmin;
+  const isSuperAdmin = currentUserDoc?.role === 'Admin Utama' || currentUserDoc?.role === 'ADMIN UTAMA' || currentUserDoc?.role === 'ADMIN' || currentUserDoc?.isSuperAdmin === true || currentUserDoc?.email?.toLowerCase().trim() === 'g-59129199@moe-dl.edu.my' || firebaseUser?.email?.toLowerCase().trim() === 'g-59129199@moe-dl.edu.my';
+  const isManagementAdmin = isSuperAdmin || ['ADMIN', 'GURU', 'Guru', 'Setiausaha', 'Naib Setiausaha', 'Penolong Setiausaha', 'Bendahari', 'Pengerusi'].includes(currentUserDoc?.role || '');
+  const isPermohonanOnlyRole = !isSuperAdmin && !isManagementAdmin;
   
   const [activeTab, setActiveTab] = useState<'dashboard' | 'permohonan' | 'pengguna' | 'login_logs' | 'audit_logs'>(() => {
-    if (!isSuperAdmin) {
-      return 'permohonan';
-    }
-    return 'dashboard';
+    return 'pengguna';
   });
 
   useEffect(() => {
@@ -3830,7 +3827,7 @@ export default function AdminSection({ isMobile = false, onBack, onNavigateToUru
                     className="w-full bg-slate-55 border border-slate-200 rounded-lg p-2 text-[11px] font-bold text-slate-700"
                   >
                     <option value="">Semua Role</option>
-                    {['ADMIN UTAMA', 'GURU', 'MURID', 'IBU BAPA', 'TETAMU', 'Pengerusi', 'Setiausaha', 'Bendahari', 'Ahli Jawatankuasa', 'Ahli Biasa'].map(r => (
+                    {['ADMIN UTAMA', 'ADMIN', 'GURU', 'MURID', 'IBU BAPA', 'KPM/JPN/NAZIR/PPD', 'TETAMU'].map(r => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
@@ -3991,6 +3988,13 @@ export default function AdminSection({ isMobile = false, onBack, onNavigateToUru
                                   </span>
                                 );
                               }
+                              if (r === 'ADMIN') {
+                                return (
+                                  <span className="bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-md text-[8.5px] uppercase font-black whitespace-nowrap inline-flex items-center gap-1 shadow-2xs">
+                                    <Shield size={10} className="text-blue-600" /> ADMIN
+                                  </span>
+                                );
+                              }
                               if (r === 'GURU') {
                                 return (
                                   <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded-md text-[8.5px] uppercase font-black whitespace-nowrap inline-flex items-center gap-1">
@@ -4009,6 +4013,13 @@ export default function AdminSection({ isMobile = false, onBack, onNavigateToUru
                                 return (
                                   <span className="bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 rounded-md text-[8.5px] uppercase font-black whitespace-nowrap inline-flex items-center gap-1">
                                     👨‍👩‍👦 IBU BAPA
+                                  </span>
+                                );
+                              }
+                              if (r === 'KPM/JPN/NAZIR/PPD') {
+                                return (
+                                  <span className="bg-purple-50 border border-purple-200 text-purple-700 px-2 py-0.5 rounded-md text-[8.5px] uppercase font-black whitespace-nowrap inline-flex items-center gap-1">
+                                    🏛️ KPM/JPN/NAZIR/PPD
                                   </span>
                                 );
                               }
@@ -4530,7 +4541,7 @@ export default function AdminSection({ isMobile = false, onBack, onNavigateToUru
                     onChange={(e) => setNewRoleInput(e.target.value)}
                     className="w-full bg-slate-55 border border-slate-200 rounded-lg p-2.5 text-xs font-bold text-slate-800 focus:outline-hidden"
                   >
-                    {['ADMIN UTAMA', 'GURU', 'MURID', 'IBU BAPA', 'TETAMU', 'Pengerusi', 'Setiausaha', 'Bendahari', 'Ahli Jawatankuasa', 'Ahli Biasa'].map(r => (
+                    {['ADMIN UTAMA', 'ADMIN', 'GURU', 'MURID', 'IBU BAPA', 'KPM/JPN/NAZIR/PPD', 'TETAMU'].map(r => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>

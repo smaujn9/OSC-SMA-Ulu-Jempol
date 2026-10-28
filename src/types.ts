@@ -1,4 +1,4 @@
-export type SchoolRole = 'ADMIN UTAMA' | 'GURU' | 'MURID' | 'IBU BAPA' | 'TETAMU';
+export type SchoolRole = 'ADMIN UTAMA' | 'ADMIN' | 'GURU' | 'MURID' | 'IBU BAPA' | 'KPM/JPN/NAZIR/PPD' | 'TETAMU';
 
 export interface BenefitItem {
   id: string;

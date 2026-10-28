@@ -821,13 +821,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             // New user without doc (could be anonymous, or brand new Google login)
             if (fUser.isAnonymous) {
-              // Anonymous guest account - don't force popup on every refresh if choice already made, 
-              // but standard behavior is to show choices if they haven't registered
-              // Let's check local storage to avoid spamming the popup if they chose "tetamu"
-              const choseTetamu = localStorage.getItem('tmf2_chose_tetamu') === 'true';
-              if (!choseTetamu) {
-                setShowChoicePopup(true);
-              }
+              // Anonymous guest account automatically receives TETAMU role
+              setCurrentUserDoc(DEFAULT_TETAMU_USER_DOC);
               setLoading(false);
             } else {
               // Google user with no Firestore doc yet!
@@ -2378,12 +2373,16 @@ ${titleHeader}
     await logAction('Kuiri Permohonan', `Menghantar kuiri bagi permohonan ahli (${appId}) dengan catatan: ${remarks}`);
   };
 
-  // Change user role (Admin Utama only)
+  // Change user role (Admin Utama and Admin)
   const changeUserRole = async (userId: string, newRole: string, reason: string) => {
     if (!currentUserDoc) throw new Error("Sesi tidak sah.");
-    const isCallerAdminUtama = currentUserDoc.role?.toUpperCase() === 'ADMIN UTAMA' || currentUserDoc.isSuperAdmin === true || isSuperAdminEmail(currentUserDoc.email);
+    const isCallerAdminUtama = 
+      currentUserDoc.role?.toUpperCase() === 'ADMIN UTAMA' || 
+      currentUserDoc.role?.toUpperCase() === 'ADMIN' || 
+      currentUserDoc.isSuperAdmin === true || 
+      isSuperAdminEmail(currentUserDoc.email);
     if (!isCallerAdminUtama) {
-      throw new Error("Kebenaran khas ADMIN UTAMA diperlukan untuk mengubah role.");
+      throw new Error("Kebenaran khas ADMIN UTAMA atau ADMIN diperlukan untuk mengubah role.");
     }
 
     const userDocRef = doc(db, 'users', userId);
@@ -2392,25 +2391,35 @@ ${titleHeader}
 
     const userData = userSnap.data() as AppUser;
     
-    // Prevent modifying the super admin or other super admin accounts
+    // Prevent modifying the super admin or official super admin accounts by others
     if (userData.isSuperAdmin && currentUserDoc.uid !== userId && isSuperAdminEmail(userData.email)) {
       throw new Error("Akaun ADMIN UTAMA rasmi tidak boleh diubah.");
     }
 
     const changerName = currentUserDoc.displayName || currentUserDoc.email || 'ADMIN UTAMA';
+    const isRoleMember = ['ADMIN UTAMA', 'ADMIN', 'GURU', 'MURID', 'IBU BAPA', 'KPM/JPN/NAZIR/PPD'].includes(newRole);
 
     try {
       await runTransaction(db, async (transaction) => {
         // 1. Update user role and jobs
-        transaction.update(userDocRef, {
+        const updatePayload: any = {
           role: newRole,
           updatedAt: serverTimestamp(),
-          // Update job fields based on new role
-          jobRole1: 'Ahli Persatuan',
+          membershipStatus: isRoleMember ? 'Aktif' : (newRole === 'TETAMU' ? 'Bukan Ahli' : userData.membershipStatus || 'Aktif'),
+          approvalStatus: isRoleMember ? 'Approved' : (newRole === 'TETAMU' ? 'Belum Mohon' : userData.approvalStatus || 'Approved'),
+          membershipType: newRole,
+          jobRole1: 'Warga Sekolah / PIBG',
           jobDetails1: 'SMA Ulu Jempol (SMAUJ) - 2026 - Sekarang',
-          jobRole2: (newRole === 'Ahli Biasa' || newRole === 'Pelawat') ? '' : newRole,
-          jobDetails2: (newRole === 'Ahli Biasa' || newRole === 'Pelawat') ? '' : 'Jawatan Rasmi'
-        });
+          jobRole2: newRole,
+          jobDetails2: 'Peranan Rasmi'
+        };
+
+        if (newRole === 'ADMIN UTAMA') {
+          updatePayload.isSuperAdmin = true;
+          updatePayload.department = 'Pentadbiran Utama';
+        }
+
+        transaction.update(userDocRef, updatePayload);
 
         // 2. Add log entry inside "roles" collection (Audit Trail for roles)
         const roleLogRef = doc(collection(db, 'roles'));
@@ -2432,9 +2441,9 @@ ${titleHeader}
     }
 
     // Immediately update local state so UI updates in real-time without delay
-    setAllUsers(prev => prev.map(u => u.uid === userId ? { ...u, role: newRole } : u));
+    setAllUsers(prev => prev.map(u => u.uid === userId ? { ...u, role: newRole as any, membershipStatus: isRoleMember ? 'Aktif' : (newRole === 'TETAMU' ? 'Bukan Ahli' : u.membershipStatus) } : u));
     if (currentUserDoc && currentUserDoc.uid === userId) {
-      setCurrentUserDoc(prev => prev ? { ...prev, role: newRole } : prev);
+      setCurrentUserDoc(prev => prev ? { ...prev, role: newRole as any, membershipStatus: isRoleMember ? 'Aktif' : (newRole === 'TETAMU' ? 'Bukan Ahli' : prev.membershipStatus) } : prev);
     }
   };
 

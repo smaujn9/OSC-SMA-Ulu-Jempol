@@ -179,6 +179,9 @@ export default function DesktopView({
   const userRole = (currentUserDoc?.role || 'TETAMU').toUpperCase();
   const isAdminUtama = Boolean(
     userRole === 'ADMIN UTAMA' ||
+    userRole === 'ADMIN' ||
+    currentUserDoc?.role === 'ADMIN UTAMA' ||
+    currentUserDoc?.role === 'ADMIN' ||
     currentUserDoc?.isSuperAdmin === true ||
     (currentUserDoc?.email && currentUserDoc.email.toLowerCase().trim() === 'g-59129199@moe-dl.edu.my') ||
     (firebaseUser?.email && firebaseUser.email.toLowerCase().trim() === 'g-59129199@moe-dl.edu.my')
@@ -187,6 +190,7 @@ export default function DesktopView({
   const isGuru = userRole === 'GURU';
   const isMurid = userRole === 'MURID';
   const isIbuBapa = userRole === 'IBU BAPA';
+  const isKpm = userRole === 'KPM/JPN/NAZIR/PPD';
   const isTetamu = !firebaseUser || firebaseUser.isAnonymous || firebaseUser.uid === 'guest_local' || userRole === 'TETAMU' || userRole === 'PELAWAT';
 
   const isApprovedMember = Boolean(
@@ -194,9 +198,10 @@ export default function DesktopView({
     isGuru ||
     isMurid ||
     isIbuBapa ||
+    isKpm ||
     (!isKuiriUser && (
       currentUserDoc?.membershipStatus === 'Aktif' || 
-      currentUserDoc?.membershipStatus === 'Active' ||
+      currentUserDoc?.membershipStatus === 'Active' || 
       currentUserDoc?.membershipStatus === 'Diluluskan' || 
       currentUserDoc?.membershipStatus === 'Diluluskan Keahlian' ||
       currentUserDoc?.approvalStatus === 'Approved' || 
@@ -1098,7 +1103,7 @@ export default function DesktopView({
     { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone, bg: 'bg-pink-50 text-pink-600', locked: !isAhliAktif },
     { id: 'takwim', label: 'Takwim', icon: CalendarIcon, bg: 'bg-indigo-50 text-indigo-600', locked: !isAhliAktif },
     { id: 'sumbangan', label: 'Sumbangan', icon: Heart, bg: 'bg-rose-50 text-rose-600', locked: false },
-    { id: 'daftar-ahli', label: 'Daftar Ahli', icon: UserPlus, bg: 'bg-teal-50 text-teal-600' },
+    { id: 'chat', label: 'Chat Komuniti', icon: MessageSquare, bg: 'bg-teal-50 text-teal-600' },
     { id: 'ahli', label: 'Ahli Jawatankuasa', icon: Users, bg: 'bg-violet-50 text-violet-600' },
     { id: 'admin', label: 'Panel Admin', icon: Shield, bg: 'bg-blue-50 text-blue-600', locked: !hasAdminAccess },
     { id: 'lain-lain', label: 'Lain-lain', icon: MoreHorizontal, bg: 'bg-slate-50 text-slate-600' },
@@ -1110,23 +1115,26 @@ export default function DesktopView({
         <Lock className="w-7 h-7" />
       </div>
       <div className="space-y-1.5">
-        <h3 className="text-lg font-black text-slate-950 uppercase tracking-tight">AKSES DITOLAK: BUKAN WARGA BERDAFTAR</h3>
+        <h3 className="text-lg font-black text-slate-950 uppercase tracking-tight">AKSES TERHAD: PERANAN TETAMU</h3>
         <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-          Menu ini hanya boleh diakses oleh warga rasmi Sekolah Menengah Agama Ulu Jempol yang berstatus <span className="text-emerald-600 font-bold">Aktif / Disahkan</span>.
+          Menu ini hanya boleh diakses oleh peranan sah sekolah (ADMIN, GURU, MURID, IBU BAPA, atau KPM/JPN/NAZIR/PPD).
         </p>
       </div>
-      <div className="bg-slate-50 rounded-xl p-3 text-[10px] text-slate-500 font-bold border border-slate-100 max-w-sm">
-        Sila pergi ke menu <span className="font-extrabold text-indigo-600">Daftar Ahli</span> untuk mengisi borang pendaftaran keahlian dan dapatkan pengesahan daripada pihak Setiausaha / Admin Utama.
+      <div className="bg-slate-50 rounded-xl p-3 text-[10px] text-slate-600 font-bold border border-slate-100 max-w-sm">
+        Peranan akaun anda pada masa ini adalah <span className="font-extrabold text-indigo-600">TETAMU</span>. Pentadbir Sekolah (ADMIN UTAMA) akan menetapkan peranan rasmi anda melalui Panel Pentadbiran.
       </div>
-      <div className="bg-amber-50/80 rounded-xl p-3 text-[10px] text-amber-900 font-semibold border border-amber-200/80 max-w-sm text-left">
-        💡 <strong>1 Rumah 1 Pendaftaran Sahaja:</strong> Cukup seorang wakil mendaftar bagi setiap rumah. Semua nama dalam <em>Senarai Isi Rumah</em> akan automatik diiktiraf sebagai ahli persatuan.
-      </div>
-      <button
-        onClick={() => setCurrentView('daftar-ahli')}
-        className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-indigo-150 transition-all cursor-pointer hover:scale-[1.01]"
-      >
-        DAFTAR AHLI SEKARANG
-      </button>
+      {!firebaseUser || firebaseUser.isAnonymous ? (
+        <button
+          onClick={loginWithGoogle}
+          className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-indigo-150 transition-all cursor-pointer hover:scale-[1.01]"
+        >
+          LOG MASUK GOOGLE
+        </button>
+      ) : (
+        <div className="text-[11px] font-bold text-slate-500">
+          Sila maklumkan kepada Pentadbir Sekolah untuk penetapan peranan anda.
+        </div>
+      )}
     </div>
   );
 
@@ -2420,27 +2428,30 @@ export default function DesktopView({
                       <div 
                         onClick={() => {
                           if (!firebaseUser || firebaseUser.isAnonymous) {
-                            localStorage.setItem('tmf2_clicked_register_first', 'true');
                             loginWithGoogle().catch(err => {
                               console.error("Gagal log masuk google:", err);
-                              localStorage.removeItem('tmf2_clicked_register_first');
                             });
-                          } else {
-                            setCurrentView('daftar-ahli');
                           }
                         }}
-                        className="relative bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl p-5 overflow-hidden shadow-lg shadow-indigo-900/10 cursor-pointer group border border-indigo-500/30 transition-transform hover:-translate-y-0.5"
+                        className="relative bg-gradient-to-br from-indigo-850 to-slate-900 rounded-2xl p-5 overflow-hidden shadow-lg shadow-indigo-900/10 group border border-indigo-500/30 transition-transform hover:-translate-y-0.5"
                       >
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                           <Users size={80} className="text-white transform rotate-12" />
                         </div>
                         <div className="relative z-10 flex flex-col justify-between h-full">
                           <div className="space-y-1.5 text-white pr-10">
-                            <h3 className="font-extrabold text-lg flex items-center gap-2">
-                              Daftar Ahli Sekarang <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            <div className="flex items-center gap-2">
+                              <span className="px-2.5 py-0.5 bg-slate-500/30 border border-slate-400/40 text-slate-200 text-[10px] font-black rounded-full uppercase tracking-wider">
+                                PERANAN: {currentUserDoc?.role || 'TETAMU'}
+                              </span>
+                            </div>
+                            <h3 className="font-extrabold text-lg flex items-center gap-2 text-white">
+                              Selamat Datang ke Portal Rasmi SMAUJ
                             </h3>
                             <p className="text-xs font-medium text-indigo-100 leading-relaxed">
-                              Sertai portal rasmi Sekolah Menengah Agama Ulu Jempol (SMAUJ). Nikmati maklumat takwim, rekod sumbangan dan kemudahan eksklusif.
+                              {!firebaseUser || firebaseUser.isAnonymous 
+                                ? 'Sila klik untuk log masuk menggunakan emel Google anda. Semua pengguna baharu akan memegang peranan TETAMU sehingga peranan rasmi ditetapkan oleh Pentadbir Sekolah.'
+                                : 'Akaun Google anda aktif dengan peranan TETAMU. Pentadbir Sekolah (ADMIN UTAMA) akan menetapkan peranan anda (ADMIN, GURU, MURID, IBU BAPA, atau KPM/JPN/NAZIR/PPD).'}
                             </p>
                           </div>
                         </div>
