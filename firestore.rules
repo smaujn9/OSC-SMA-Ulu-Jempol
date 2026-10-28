@@ -1,0 +1,271 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function hasUserDoc() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return hasUserDoc() && ('role' in getUserData()) ? getUserData().role : '';
+    }
+
+    function isUserSuperAdmin() {
+      return (isSignedIn() && ('email' in request.auth.token) && request.auth.token.email != null && (
+        request.auth.token.email.lower() == 'g-59129199@moe-dl.edu.my' ||
+        request.auth.token.email.lower() == 'smaujn9@gmail.com' ||
+        request.auth.token.email.lower() == 'firdaushadi442@gmail.com'
+      )) ||
+        (hasUserDoc() && ('isSuperAdmin' in getUserData()) && getUserData().isSuperAdmin == true);
+    }
+
+    function isSpecialCommitteeEmail() {
+      return isSignedIn() && ('email' in request.auth.token) && request.auth.token.email != null && (
+        request.auth.token.email.lower() == 'g-59129199@moe-dl.edu.my' ||
+        request.auth.token.email.lower() == 'smaujn9@gmail.com' ||
+        request.auth.token.email.lower() == 'setiausahamusytari@gmail.com' ||
+        request.auth.token.email.lower() == 'setiaushamusytari@gmail.com' ||
+        request.auth.token.email.lower() == 'bendaharimusytari@gmail.com'
+      );
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        isUserSuperAdmin() ||
+        isSpecialCommitteeEmail() ||
+        getUserRole() in [
+          'Admin Utama', 'ADMIN UTAMA', 'Admin', 'ADMIN', 'Pengetua', 'Guru Besar', 'Penolong Kanan Pentadbiran',
+          'Penolong Kanan HEM', 'Penolong Kanan Kokurikulum', 'GKMP', 'Guru Kanan',
+          'Guru', 'GURU', 'Kaunselor', 'Staf Sokongan', 'AKP', 'YDP PIBG', 'NYDP PIBG',
+          'Setiausaha PIBG', 'Bendahari PIBG', 'AJK PIBG',
+          'Pengerusi', 'Naib Pengerusi', 'Setiausaha', 'Bendahari', 'AJK'
+        ]
+      );
+    }
+
+    function isAdminUtama() {
+      return isSignedIn() && (
+        isUserSuperAdmin() ||
+        getUserRole() in ['Admin Utama', 'ADMIN UTAMA', 'Admin', 'Pengetua']
+      );
+    }
+
+    function isMinitAuthorized() {
+      return isSignedIn() && (
+        isUserSuperAdmin() ||
+        isSpecialCommitteeEmail() ||
+        getUserRole() in [
+          'Admin Utama', 'Admin', 'Pengetua', 'Penolong Kanan Pentadbiran',
+          'Penolong Kanan HEM', 'Penolong Kanan Kokurikulum',
+          'Setiausaha PIBG', 'Bendahari PIBG', 'Pengerusi', 'Setiausaha', 'Bendahari'
+        ]
+      );
+    }
+
+    // Default catch-all rule
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if isAdminUtama() || (isAdmin() && resource.data.isSuperAdmin != true) || true;
+
+      match /notifications/{notifId} {
+        allow read, write: if true;
+      }
+    }
+
+    match /folders/{folderId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /membershipApplications/{appId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if true;
+    }
+
+    match /complaints/{complaintId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if true;
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    match /loginLogs/{logId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    match /roles/{logId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    match /fees/{feeId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /programReports/{reportId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /takwim/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /announcements/{annId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /kewanganTransactions/{txnId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /financialTransactions/{txnId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /transactions/{txnId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /kewanganBalanceSheet/{itemId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /paymentVouchers/{voucherId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /kewanganVerification/{docId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /notisPanggilan/{noticeId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /kehadiran/{kehadiranId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if true;
+    }
+
+    match /surat_rasmi/{letterId} {
+      allow read, write: if true;
+    }
+
+    match /minitMesyuarat/{docId} {
+      allow read, write: if true;
+    }
+
+    match /pushSubscriptions/{subId} {
+      allow read, write: if true;
+    }
+
+    match /scheduledNotifications/{docId} {
+      allow read, write: if true;
+    }
+
+    match /kertasKerja/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /perbelanjaanProgram/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /qurbanRegistrations/{regId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if true;
+    }
+
+    match /cases/{caseId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    match /system/{docId} {
+      allow read, write: if true;
+    }
+
+    match /admins/{docId} {
+      allow read, write: if true;
+    }
+
+    match /emailLogs/{logId} {
+      allow read, write: if true;
+    }
+
+    match /donations/{donationId} {
+      allow read, write: if true;
+    }
+
+    match /sumbangan/{sumbanganId} {
+      allow read, write: if true;
+    }
+
+    match /chat/{chatId} {
+      allow read, write: if true;
+    }
+
+    match /comments/{commentId} {
+      allow read, write: if true;
+    }
+  }
+}

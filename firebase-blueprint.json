@@ -1,0 +1,381 @@
+{
+  "entities": {
+    "Post": {
+      "title": "Post",
+      "description": "A social post in the community chat",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "content": { "type": "string" },
+        "image": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "likes": { "type": "array" },
+        "comments": { "type": "array" },
+        "isPinned": { "type": "boolean" }
+      },
+      "required": ["id", "authorName", "content", "timestamp"]
+    },
+    "FeeItem": {
+      "title": "FeeItem",
+      "description": "An outstanding fee item for a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "amount": { "type": "number" },
+        "dueDate": { "type": "string" },
+        "isPaid": { "type": "boolean" },
+        "datePaid": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "amount", "dueDate", "isPaid"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "An official announcement from the committee",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "date": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "title", "content", "date", "category"]
+    },
+    "UpcomingEvent": {
+      "title": "UpcomingEvent",
+      "description": "An event scheduled in the community calendar",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "location": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "day": { "type": "string" },
+        "month": { "type": "string" },
+        "status": { "type": "string", "enum": ["draf", "rasmi"] },
+        "rawDate": { "type": "string" }
+      },
+      "required": ["id", "title", "location", "date", "time", "day", "month"]
+    },
+    "BlogItem": {
+      "title": "BlogItem",
+      "description": "A bulletin or blog post about community news",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "summary": { "type": "string" },
+        "image": { "type": "string" }
+      },
+      "required": ["id", "title", "date", "summary", "image"]
+    },
+    "KewanganTransaction": {
+      "title": "KewanganTransaction",
+      "description": "A financial income or expense transaction",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["masuk", "keluar"] },
+        "category": { "type": "string" },
+        "title": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "recordedBy": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["id", "type", "category", "title", "amount", "date"]
+    },
+    "AppUser": {
+      "title": "AppUser",
+      "description": "User profile with roles and membership statuses",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "role": { "type": "string" },
+        "membershipType": { "type": "string" },
+        "membershipStatus": { "type": "string" },
+        "approvalStatus": { "type": "string" },
+        "isSuperAdmin": { "type": "boolean" },
+        "createdAt": { "type": "object" },
+        "updatedAt": { "type": "object" },
+        "lastLoginAt": { "type": "object" },
+        "selectedTambahanIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["uid", "role", "membershipStatus"]
+    },
+    "KewanganBalanceSheetItem": {
+      "title": "KewanganBalanceSheetItem",
+      "description": "An item in the community's Balance Sheet (Kunci Kira-kira)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "val": { "type": "number" },
+        "type": { "type": "string", "enum": ["fixed-assets", "liabilities", "current-assets", "other-liabilities", "capital"] }
+      },
+      "required": ["name", "val", "type"]
+    },
+    "KewanganVerification": {
+      "title": "KewanganVerification",
+      "description": "Digital verification signatures and comments for community finance report",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "treasurerComment": { "type": "string" },
+        "auditorComment": { "type": "string" },
+        "preparedSigned": { "type": "boolean" },
+        "reviewedSigned": { "type": "boolean" },
+        "authorizedSigned": { "type": "boolean" },
+        "audited1Signed": { "type": "boolean" },
+        "audited2Signed": { "type": "boolean" },
+        "preparedSignURL": { "type": "string" },
+        "reviewedSignURL": { "type": "string" },
+        "authorizedSignURL": { "type": "string" },
+        "audited1SignURL": { "type": "string" },
+        "audited2SignURL": { "type": "string" }
+      }
+    },
+    "AssociationFolder": {
+      "title": "AssociationFolder",
+      "description": "Folder with uploaded documents metadata and discussion comments",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "driveFolderId": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "updatedBy": { "type": "string" },
+        "files": { "type": "array" },
+        "comments": { "type": "array" }
+      },
+      "required": ["id", "name", "createdAt"]
+    },
+    "PaymentVoucher": {
+      "title": "PaymentVoucher",
+      "description": "Payment Voucher (Baucar Bayaran) with signatures",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "associationName": { "type": "string" },
+        "associationNo": { "type": "string" },
+        "bankName": { "type": "string" },
+        "bankAccountName": { "type": "string" },
+        "bankAccountNumber": { "type": "string" },
+        "payeeName": { "type": "string" },
+        "payeeEmail": { "type": "string" },
+        "amount": { "type": "number" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "accountDebit": { "type": "string" },
+        "accountCredit": { "type": "string" },
+        "sigTreasurer": { "type": "string" },
+        "sigTreasurerName": { "type": "string" },
+        "sigTreasurerAt": { "type": "string" },
+        "sigChairman": { "type": "string" },
+        "sigChairmanName": { "type": "string" },
+        "sigChairmanAt": { "type": "string" },
+        "sigReceiver": { "type": "string" },
+        "sigReceiverName": { "type": "string" },
+        "sigReceiverAt": { "type": "string" },
+        "txnId": { "type": "string" }
+      },
+      "required": ["id", "associationName", "payeeName", "amount", "date"]
+    },
+    "MinitMesyuarat": {
+      "title": "MinitMesyuarat",
+      "description": "Official AGM or Committee meeting minutes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["agung_khas", "jawatankuasa"] },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "venue": { "type": "string" },
+        "chairperson": { "type": "string" },
+        "attendance": { "type": "array" },
+        "ordinaryMembersCount": { "type": "number" },
+        "agendas": { "type": "array" },
+        "preparedBy": { "type": "string" },
+        "preparedByRole": { "type": "string" },
+        "confirmedBy": { "type": "string" },
+        "confirmedByRole": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["type", "title", "date", "time", "venue", "chairperson"]
+    },
+    "Complaint": {
+      "title": "Complaint",
+      "description": "A resident complaint sent to the committee and Telegram",
+      "type": "object",
+      "properties": {
+        "nama": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "noRumah": { "type": "string" },
+        "details": { "type": "string" },
+        "status": { "type": "string", "enum": ["Baru", "Sedang Diproses", "Selesai"] },
+        "createdAt": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["nama", "details", "createdAt"]
+    },
+    "NotisPanggilan": {
+      "title": "NotisPanggilan",
+      "description": "Official notice of meeting (EGM/AGM)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["agung_khas", "agung"] },
+        "title": { "type": "string" },
+        "referenceNo": { "type": "string" },
+        "dateOfNotice": { "type": "string" },
+        "meetingDate": { "type": "string" },
+        "meetingTime": { "type": "string" },
+        "meetingVenue": { "type": "string" },
+        "agenda": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "signatureName": { "type": "string" },
+        "signatureRole": { "type": "string" },
+        "isTick": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "type", "title", "meetingDate", "meetingTime", "meetingVenue"]
+    },
+    "Kehadiran": {
+      "title": "Kehadiran",
+      "description": "Attendance confirmation records for a meeting notice",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "noticeId": { "type": "string" },
+        "userUid": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userRole": { "type": "string" },
+        "status": { "type": "string", "enum": ["Hadir", "Tidak Hadir"] },
+        "reason": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "noticeId", "userUid", "userName", "status"]
+    },
+    "LoginLog": {
+      "title": "LoginLog",
+      "description": "User login records tracking who logged in, their fixed UID, and appointment status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string" },
+        "membershipType": { "type": "string" },
+        "membershipStatus": { "type": "string" },
+        "approvalStatus": { "type": "string" },
+        "isAppointedMember": { "type": "boolean" },
+        "memberNo": { "type": "string" },
+        "noRumah": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "loginMethod": { "type": "string" },
+        "userAgent": { "type": "string" },
+        "timestamp": { "type": "object" }
+      },
+      "required": ["uid", "loginMethod"]
+    }
+  },
+  "firestore": {
+    "/loginLogs/{logId}": {
+      "schema": "LoginLog",
+      "description": "Permanent log records of all logins with deterministic UID and membership status"
+    },
+    "/notisPanggilan/{noticeId}": {
+      "schema": "NotisPanggilan",
+      "description": "Notis Panggilan Mesyuarat records"
+    },
+    "/kehadiran/{kehadiranId}": {
+      "schema": "Kehadiran",
+      "description": "Kehadiran confirmation logs for active notices"
+    },
+    "/complaints/{complaintId}": {
+      "schema": "Complaint",
+      "description": "Resident complaints and feedback logs"
+    },
+    "/minitMesyuarat/{docId}": {
+      "schema": "MinitMesyuarat",
+      "description": "Official meeting minutes for AGM and Committee"
+    },
+    "/paymentVouchers/{voucherId}": {
+      "schema": "PaymentVoucher",
+      "description": "Payment vouchers and signatures"
+    },
+    "/folders/{folderId}": {
+      "schema": "AssociationFolder",
+      "description": "Association document folders and metadata"
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Community posts and discussions"
+    },
+    "/fees/{feeId}": {
+      "schema": "FeeItem",
+      "description": "Outstanding user fees"
+    },
+    "/announcements/{annId}": {
+      "schema": "Announcement",
+      "description": "Official committee announcements"
+    },
+    "/events/{eventId}": {
+      "schema": "UpcomingEvent",
+      "description": "Upcoming scheduled community events"
+    },
+    "/blogs/{blogId}": {
+      "schema": "BlogItem",
+      "description": "Bulletin and blog articles"
+    },
+    "/kewanganTransactions/{txnId}": {
+      "schema": "KewanganTransaction",
+      "description": "Financial income and expense log"
+    },
+    "/kewanganBalanceSheet/{itemId}": {
+      "schema": "KewanganBalanceSheetItem",
+      "description": "Balance Sheet (Kunci Kira-kira) assets, liabilities, and capital"
+    },
+    "/kewanganVerification/{docId}": {
+      "schema": "KewanganVerification",
+      "description": "Digital signatures and comments of the financial report"
+    },
+    "/qurbanRegistrations/{regId}": {
+      "schema": "QurbanRegistration",
+      "description": "Qurban and Aqiqah participant registrations"
+    },
+    "/cases/{caseId}": {
+      "schema": "CaseRecord",
+      "description": "Community incident case records registered by AJK"
+    },
+    "/users/{userId}": {
+      "schema": "AppUser",
+      "description": "User accounts and permissions"
+    }
+  }
+}

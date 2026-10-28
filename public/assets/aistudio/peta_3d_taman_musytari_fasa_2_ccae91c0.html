@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peta 3D Kawasan Kejiranan Taman Musytari Fasa 2</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #0f172a;
+            user-select: none;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .glass-panel-light {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(203, 213, 225, 0.8);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.4);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.5);
+            border-radius: 9999px;
+        }
+        .filter-btn.active {
+            ring-width: 2px;
+            ring-color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="text-slate-100 antialiased">
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Top Header & Search Bar -->
+    <header class="fixed top-2.5 sm:top-3 left-2.5 sm:left-3 right-2.5 sm:right-3 z-20 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2 sm:gap-3 pointer-events-none">
+        <!-- Title Badge -->
+        <div class="glass-panel px-3 py-2 sm:px-4 sm:py-3 rounded-2xl shadow-2xl pointer-events-auto flex items-center gap-2.5 sm:gap-3.5 max-w-2xl">
+            <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30">Peta Interaktif 3D</span>
+                    <span class="text-[10px] sm:text-xs text-slate-400 hidden md:inline">Kemaskini: 20/10/2026, 19:09</span>
+                </div>
+                <h1 class="text-xs sm:text-base font-extrabold tracking-tight text-white leading-tight mt-0.5 truncate sm:whitespace-normal">
+                    PERSATUAN TAMAN MUSYTARI FASA 2, BATU KIKIR
+                </h1>
+            </div>
+        </div>
+
+        <!-- Search & Camera Controls -->
+        <div class="glass-panel p-2 sm:p-2.5 rounded-2xl shadow-2xl pointer-events-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-full">
+            <!-- Row 1: Search Lot Input + Mobile Exit Button -->
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <div class="relative flex items-center flex-1 sm:w-60 min-w-0">
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input id="lot-search" type="number" min="121" max="232" placeholder="Cari No. Lot (121-232)..." 
+                        class="w-full bg-slate-800/90 text-white text-xs sm:text-sm pl-9 pr-14 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-400 transition placeholder:text-slate-400">
+                    <button id="btn-search" class="absolute right-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold px-2.5 py-1 rounded-lg transition shadow-sm cursor-pointer">
+                        Cari
+                    </button>
+                </div>
+
+                <!-- On mobile, place 'Kembali' right beside the search box so it is neatly visible, never cramped or wrapped -->
+                <button id="btn-back-dashboard-mobile" onclick="if(window.parent && window.parent !== window){ window.parent.postMessage({ type: 'CLOSE_3D_MAP' }, '*'); } else if(window.history.length > 1){ window.history.back(); } else { window.location.href = '/'; }" class="sm:hidden px-3 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 active:scale-95 text-white border border-rose-400/40 transition flex items-center justify-center gap-1.5 shadow shrink-0 whitespace-nowrap cursor-pointer" title="Kembali ke Dashboard">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    <span>Kembali</span>
+                </button>
+            </div>
+
+            <div class="h-6 w-px bg-slate-700 hidden sm:block"></div>
+
+            <!-- Row 2: View Presets (Grid of 4 on mobile, horizontal flex on desktop) -->
+            <div class="grid grid-cols-4 sm:flex items-center gap-1.5 w-full sm:w-auto">
+                <button id="btn-view-3d" class="py-2 px-2 sm:px-3 rounded-xl text-[11px] sm:text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition flex items-center justify-center gap-1 sm:gap-1.5 shadow whitespace-nowrap cursor-pointer">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"/></svg>
+                    <span>3D Dron</span>
+                </button>
+                <button id="btn-view-top" class="py-2 px-2 sm:px-3 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 transition flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap cursor-pointer">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                    <span>Pelan Atas</span>
+                </button>
+                <button id="btn-autorotate" class="py-2 px-2 sm:px-3 rounded-xl text-[11px] sm:text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 border border-emerald-500/50 transition flex items-center justify-center gap-1 sm:gap-1.5 shadow whitespace-nowrap cursor-pointer" title="Jeda Putaran (Pause)">
+                    <svg id="icon-autorotate-pause" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <svg id="icon-autorotate-play" class="w-3.5 h-3.5 shrink-0 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span id="text-autorotate">Pause</span>
+                </button>
+                <button id="btn-toggle-labels" class="py-2 px-2 sm:px-3 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 transition flex items-center justify-center whitespace-nowrap cursor-pointer" title="Papar/Sembunyi Label">
+                    <span>No. Lot</span>
+                </button>
+                <!-- Desktop exit button -->
+                <button id="btn-back-dashboard" onclick="if(window.parent && window.parent !== window){ window.parent.postMessage({ type: 'CLOSE_3D_MAP' }, '*'); } else if(window.history.length > 1){ window.history.back(); } else { window.location.href = '/'; }" class="hidden sm:flex px-3 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 active:scale-95 text-white border border-rose-400/40 transition items-center gap-1.5 shadow whitespace-nowrap cursor-pointer" title="Kembali ke Dashboard">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    <span>Kembali</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Bottom Left Legend & Filter Panel (Matches White Box in Photo) -->
+    <aside id="legend-panel" class="fixed bottom-3 left-3 z-20 max-w-md w-[calc(100vw-1.5rem)] sm:w-auto pointer-events-auto transition-transform duration-300">
+        <div class="glass-panel rounded-2xl p-3.5 sm:p-4 shadow-2xl border border-slate-700/80">
+            <div class="flex items-center justify-between mb-2.5">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Petunjuk & Tapisan Status (112 Lot)
+                </span>
+                <button id="btn-minimize-legend" class="text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800/80">
+                    Kecilkan
+                </button>
+            </div>
+
+            <div id="legend-content" class="space-y-2.5">
+                <!-- Filter Buttons Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    <button data-filter="ALL" class="filter-btn active flex items-center justify-between px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-left transition">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-sm bg-gradient-to-br from-emerald-400 via-purple-500 to-amber-400 shrink-0"></span>
+                            <span class="text-xs font-semibold text-white">Semua</span>
+                        </div>
+                        <span id="count-ALL" class="text-xs font-bold text-slate-300 bg-slate-900/80 px-1.5 py-0.5 rounded">112</span>
+                    </button>
+
+                    <button data-filter="APPROVED" class="filter-btn flex items-center justify-between px-2.5 py-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-600/50 text-left transition">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-sm bg-emerald-500 shrink-0 shadow-sm shadow-emerald-500/50"></span>
+                            <span class="text-xs font-semibold text-emerald-200">Diluluskan</span>
+                        </div>
+                        <span id="count-APPROVED" class="text-xs font-bold text-emerald-300 bg-emerald-950 px-1.5 py-0.5 rounded">48</span>
+                    </button>
+
+                    <button data-filter="QUERY" class="filter-btn flex items-center justify-between px-2.5 py-2 rounded-xl bg-amber-950/60 hover:bg-amber-900/70 border border-amber-500/50 text-left transition">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-sm bg-amber-400 shrink-0 shadow-sm shadow-amber-400/50"></span>
+                            <span class="text-xs font-semibold text-amber-200">Kuiri</span>
+                        </div>
+                        <span id="count-QUERY" class="text-xs font-bold text-amber-300 bg-amber-950 px-1.5 py-0.5 rounded">1</span>
+                    </button>
+
+                    <button data-filter="VACANT" class="filter-btn flex items-center justify-between px-2.5 py-2 rounded-xl bg-purple-950/60 hover:bg-purple-900/70 border border-purple-500/50 text-left transition">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-sm bg-purple-500 shrink-0 shadow-sm shadow-purple-500/50"></span>
+                            <span class="text-xs font-semibold text-purple-200">Tiada Penghuni</span>
+                        </div>
+                        <span id="count-VACANT" class="text-xs font-bold text-purple-300 bg-purple-950 px-1.5 py-0.5 rounded">24</span>
+                    </button>
+
+                    <button data-filter="TENANT" class="filter-btn flex items-center justify-between px-2.5 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/70 border border-rose-500/50 text-left transition">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-red-500 ring-2 ring-white shrink-0"></span>
+                            <span class="text-xs font-semibold text-rose-200">Penyewa</span>
+                        </div>
+                        <span id="count-TENANT" class="text-xs font-bold text-rose-300 bg-rose-950 px-1.5 py-0.5 rounded">8</span>
+                    </button>
+
+                    <button data-filter="UNREGISTERED" class="filter-btn flex items-center justify-between px-2.5 py-2 rounded-xl bg-slate-800/70 hover:bg-slate-700/70 border border-slate-600/60 text-left transition">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-sm bg-slate-500 shrink-0"></span>
+                            <span class="text-xs font-semibold text-slate-300">Tiada Rekod</span>
+                        </div>
+                        <span id="count-UNREGISTERED" class="text-xs font-bold text-slate-300 bg-slate-900 px-1.5 py-0.5 rounded">39</span>
+                    </button>
+                </div>
+
+                <!-- Summary Notes from the Image -->
+                <div class="text-[11px] text-slate-300 bg-slate-900/70 rounded-xl p-2.5 border border-slate-800 space-y-0.5 leading-relaxed">
+                    <p><strong class="text-emerald-400">Diselaraskan dgn Kelulusan Ahli:</strong> <span id="note-approved-summary">48 Lot Diluluskan</span> <span class="text-slate-400">(Rumah 001 Admin Utama dikecualikan)</span></p>
+                    <p><strong class="text-amber-400">Kuiri:</strong> <span id="note-kuiri-summary">Lot 218</span> | <strong class="text-purple-300">Tiada Penghuni:</strong> 24 Rumah</p>
+                    <p class="text-slate-400">Klik mana-mana rumah 3D untuk lihat maklumat ahli atau kemaskini lot.</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Right Inspector Drawer (Hidden until a house is clicked) -->
+    <aside id="inspector-drawer" class="fixed top-20 right-3 z-30 w-80 max-w-[calc(100vw-1.5rem)] glass-panel rounded-2xl p-4 shadow-2xl border border-slate-700 transition-all duration-300 translate-x-[120%] pointer-events-auto max-h-[calc(100vh-6rem)] overflow-y-auto">
+        <div class="flex items-start justify-between border-b border-slate-700/80 pb-3 mb-3">
+            <div>
+                <span id="insp-block" class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950/80 border border-emerald-700/50 px-2 py-0.5 rounded">BLOK 1A</span>
+                <h2 class="text-xl font-extrabold text-white mt-1">Rumah Lot <span id="insp-lot">218</span></h2>
+            </div>
+            <button id="btn-close-inspector" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="space-y-3 text-xs">
+            <!-- Current Status Badge -->
+            <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                <span class="text-slate-400 font-medium">Status Semasa:</span>
+                <span id="insp-status-badge" class="px-2.5 py-1 rounded-lg font-bold text-xs">DILULUSKAN</span>
+            </div>
+
+            <!-- Registered Member Info Box (Synced from Kelulusan Ahli) -->
+            <div id="insp-member-box" class="hidden bg-emerald-950/40 p-3 rounded-xl border border-emerald-700/40 space-y-1">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Rekod Kelulusan Ahli</span>
+                    <span id="insp-member-no" class="text-[10px] font-mono font-bold text-emerald-200 bg-emerald-900/70 px-1.5 py-0.5 rounded"></span>
+                </div>
+                <p id="insp-member-name" class="text-xs font-extrabold text-white uppercase leading-snug"></p>
+                <p id="insp-member-meta" class="text-[11px] text-slate-300"></p>
+            </div>
+
+            <!-- Admin / Setiausaha Edit Form Container -->
+            <div id="insp-edit-container" class="space-y-3">
+                <!-- Edit Status Form -->
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1.5">Tukar Status Keahlian / Rumah:</label>
+                    <select id="insp-select-status" class="w-full bg-slate-800 text-white rounded-xl px-3 py-2 border border-slate-600 focus:outline-none focus:border-emerald-400 text-xs font-medium">
+                        <option value="APPROVED">Hijau - Diluluskan</option>
+                        <option value="QUERY">Kuning - Kuiri / Semakan</option>
+                        <option value="VACANT">Ungu - Tiada Penghuni</option>
+                        <option value="UNREGISTERED">Tiada Tanda - Tiada Rekod Keahlian</option>
+                    </select>
+                </div>
+
+                <!-- Tenant Toggle -->
+                <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500 ring-2 ring-white"></span>
+                        <div>
+                            <p class="font-semibold text-white">Status Penyewa (Dot Merah)</p>
+                            <p class="text-[10px] text-slate-400">Tandakan jika didiami penyewa</p>
+                        </div>
+                    </div>
+                    <input id="insp-check-tenant" type="checkbox" class="w-4 h-4 accent-red-500 rounded cursor-pointer">
+                </div>
+
+                <!-- Notes Input -->
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Catatan Persatuan:</label>
+                    <textarea id="insp-notes" rows="2" placeholder="Tambah nota untuk lot ini..." class="w-full bg-slate-800/90 text-white rounded-xl p-2.5 border border-slate-700 focus:outline-none focus:border-emerald-400 text-xs"></textarea>
+                </div>
+
+                <button id="btn-save-lot" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-3 rounded-xl transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Simpan Perubahan</span>
+                </button>
+            </div>
+
+            <!-- Read-only View for Non-Admin / Non-Setiausaha -->
+            <div id="insp-readonly-container" class="hidden space-y-2.5">
+                <!-- Readonly Notes Display if any -->
+                <div id="insp-readonly-notes-box" class="hidden bg-slate-900/70 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Catatan Persatuan</span>
+                    <p id="insp-readonly-notes" class="text-xs text-slate-200 leading-relaxed"></p>
+                </div>
+
+                <!-- Restriction Notice -->
+                <div class="bg-slate-900/70 p-3 rounded-xl border border-slate-800/80 flex items-start gap-2.5 text-slate-300">
+                    <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                    <div class="space-y-0.5">
+                        <p class="text-[11px] font-bold text-slate-200">Mod Paparan Sahaja</p>
+                        <p class="text-[10px] leading-relaxed text-slate-400">
+                            Perubahan ini hanya boleh diubah oleh role <strong class="text-emerald-400">Admin Utama</strong> dan <strong class="text-emerald-400">Setiausaha</strong> sahaja.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zoom Button -->
+            <div class="pt-1">
+                <button id="btn-focus-lot" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 px-3 rounded-xl border border-slate-600 transition flex items-center justify-center gap-1.5 cursor-pointer" title="Zum Dekat">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"/></svg>
+                    <span>Zum ke Lot Ini</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Floating Hover Tooltip -->
+    <div id="hover-tooltip" class="fixed pointer-events-none z-40 hidden glass-panel px-3 py-2 rounded-xl shadow-xl border border-slate-600 text-xs transform -translate-x-1/2 -translate-y-full -mt-3">
+        <div class="flex items-center gap-2">
+            <span id="tt-dot" class="w-2.5 h-2.5 rounded-full"></span>
+            <span id="tt-lot" class="font-extrabold text-white">Lot 218</span>
+            <span id="tt-tenant" class="hidden px-1.5 py-0.5 text-[10px] font-bold bg-red-600 text-white rounded">PENYEWA</span>
+        </div>
+        <p id="tt-member" class="hidden text-[11px] font-bold text-emerald-300 mt-0.5 uppercase"></p>
+        <p id="tt-status" class="text-[11px] text-slate-300 mt-0.5">Diluluskan</p>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 hidden glass-panel px-4 py-2.5 rounded-xl border border-emerald-500/50 text-xs font-semibold text-emerald-300 shadow-2xl">
+        Maklumat lot berjaya dikemaskini!
+    </div>
+
+    <script>
+        // ============================================================================
+        // 1. EXACT NEIGHBORHOOD DATASET (112 LOTS: 121 TO 232)
+        // ============================================================================
+        const STATUS_CONFIG = {
+            APPROVED: {
+                label: 'Diluluskan (Hijau)',
+                roofColor: 0x16a34a,
+                badgeClass: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
+                dotClass: 'bg-emerald-500',
+                hex: '#16a34a'
+            },
+            QUERY: {
+                label: 'Kuiri / Semakan (Kuning)',
+                roofColor: 0xeab308,
+                badgeClass: 'bg-amber-500/20 text-amber-300 border border-amber-500/40',
+                dotClass: 'bg-amber-400',
+                hex: '#eab308'
+            },
+            VACANT: {
+                label: 'Tiada Penghuni (Ungu)',
+                roofColor: 0x9333ea,
+                badgeClass: 'bg-purple-500/20 text-purple-300 border border-purple-500/40',
+                dotClass: 'bg-purple-500',
+                hex: '#9333ea'
+            },
+            UNREGISTERED: {
+                label: 'Tiada Rekod Keahlian',
+                roofColor: 0x64748b,
+                badgeClass: 'bg-slate-500/20 text-slate-300 border border-slate-500/40',
+                dotClass: 'bg-slate-400',
+                hex: '#64748b'
+            }
+        };
+
+        // Exact layout of the 10 blocks (5 rows x 2 columns) from North (Row 1) to South (Row 5)
+        // Left-to-right lot numbers as seen in the aerial plan:
+        const BLOCKS_DEFINITION = [
+            // ROW 1 (Top / North) - Z = -72
+            {
+                id: 'Blok 1A (Utara-Barat)', row: 1, col: 'L', z: -72, facing: 'S',
+                lots: [
+                    { lot: 232, status: 'UNREGISTERED' },
+                    { lot: 231, status: 'APPROVED' },
+                    { lot: 230, status: 'UNREGISTERED' },
+                    { lot: 229, status: 'UNREGISTERED' },
+                    { lot: 228, status: 'UNREGISTERED' },
+                    { lot: 227, status: 'VACANT' },
+                    { lot: 226, status: 'UNREGISTERED' },
+                    { lot: 225, status: 'UNREGISTERED' },
+                    { lot: 224, status: 'VACANT' },
+                    { lot: 223, status: 'APPROVED', isTenant: true }
+                ]
+            },
+            {
+                id: 'Blok 1B (Utara-Timur)', row: 1, col: 'R', z: -72, facing: 'S',
+                lots: [
+                    { lot: 222, status: 'APPROVED' },
+                    { lot: 221, status: 'UNREGISTERED' },
+                    { lot: 220, status: 'APPROVED' },
+                    { lot: 219, status: 'UNREGISTERED' },
+                    { lot: 218, status: 'QUERY', notes: 'Kuiri: Dalam semakan dokumen keahlian.' },
+                    { lot: 217, status: 'APPROVED' },
+                    { lot: 216, status: 'UNREGISTERED' },
+                    { lot: 215, status: 'APPROVED' },
+                    { lot: 214, status: 'UNREGISTERED' }
+                ]
+            },
+
+            // ROW 2 - Z = -36
+            {
+                id: 'Blok 2A (Barat)', row: 2, col: 'L', z: -36, facing: 'N',
+                lots: [
+                    { lot: 192, status: 'VACANT' },
+                    { lot: 193, status: 'APPROVED', isTenant: true },
+                    { lot: 194, status: 'APPROVED' },
+                    { lot: 195, status: 'APPROVED' },
+                    { lot: 196, status: 'VACANT' },
+                    { lot: 197, status: 'VACANT' },
+                    { lot: 198, status: 'VACANT' },
+                    { lot: 199, status: 'UNREGISTERED' },
+                    { lot: 200, status: 'UNREGISTERED' },
+                    { lot: 201, status: 'VACANT' },
+                    { lot: 202, status: 'VACANT' },
+                    { lot: 203, status: 'APPROVED' }
+                ]
+            },
+            {
+                id: 'Blok 2B (Timur)', row: 2, col: 'R', z: -36, facing: 'N',
+                lots: [
+                    { lot: 204, status: 'UNREGISTERED' },
+                    { lot: 205, status: 'UNREGISTERED' },
+                    { lot: 206, status: 'VACANT' },
+                    { lot: 207, status: 'VACANT' },
+                    { lot: 208, status: 'VACANT' },
+                    { lot: 209, status: 'UNREGISTERED' },
+                    { lot: 210, status: 'UNREGISTERED' },
+                    { lot: 211, status: 'UNREGISTERED' },
+                    { lot: 212, status: 'APPROVED', isTenant: true },
+                    { lot: 213, status: 'VACANT' }
+                ]
+            },
+
+            // ROW 3 (Middle) - Z = 0
+            {
+                id: 'Blok 3A (Tengah-Barat)', row: 3, col: 'L', z: 0, facing: 'S',
+                lots: [
+                    { lot: 191, status: 'UNREGISTERED' },
+                    { lot: 190, status: 'UNREGISTERED' },
+                    { lot: 189, status: 'UNREGISTERED' },
+                    { lot: 188, status: 'UNREGISTERED' },
+                    { lot: 187, status: 'APPROVED', isTenant: true },
+                    { lot: 186, status: 'APPROVED' },
+                    { lot: 185, status: 'VACANT' },
+                    { lot: 184, status: 'UNREGISTERED' },
+                    { lot: 183, status: 'UNREGISTERED' },
+                    { lot: 182, status: 'UNREGISTERED' },
+                    { lot: 181, status: 'APPROVED' },
+                    { lot: 180, status: 'APPROVED' }
+                ]
+            },
+            {
+                id: 'Blok 3B (Tengah-Timur)', row: 3, col: 'R', z: 0, facing: 'S',
+                lots: [
+                    { lot: 179, status: 'UNREGISTERED' },
+                    { lot: 178, status: 'UNREGISTERED' },
+                    { lot: 177, status: 'APPROVED' },
+                    { lot: 176, status: 'APPROVED' },
+                    { lot: 175, status: 'APPROVED', isTenant: true },
+                    { lot: 174, status: 'UNREGISTERED' },
+                    { lot: 173, status: 'UNREGISTERED' },
+                    { lot: 172, status: 'APPROVED' },
+                    { lot: 171, status: 'APPROVED' },
+                    { lot: 170, status: 'APPROVED' },
+                    { lot: 169, status: 'APPROVED' }
+                ]
+            },
+
+            // ROW 4 - Z = 36
+            {
+                id: 'Blok 4A (Barat)', row: 4, col: 'L', z: 36, facing: 'N',
+                lots: [
+                    { lot: 145, status: 'APPROVED' },
+                    { lot: 146, status: 'VACANT' },
+                    { lot: 147, status: 'APPROVED' },
+                    { lot: 148, status: 'APPROVED' },
+                    { lot: 149, status: 'VACANT' },
+                    { lot: 150, status: 'APPROVED', isTenant: true },
+                    { lot: 151, status: 'VACANT' },
+                    { lot: 152, status: 'UNREGISTERED' },
+                    { lot: 153, status: 'APPROVED' },
+                    { lot: 154, status: 'UNREGISTERED' },
+                    { lot: 155, status: 'VACANT' },
+                    { lot: 156, status: 'VACANT' }
+                ]
+            },
+            {
+                id: 'Blok 4B (Timur)', row: 4, col: 'R', z: 36, facing: 'N',
+                lots: [
+                    { lot: 157, status: 'VACANT' },
+                    { lot: 158, status: 'APPROVED' },
+                    { lot: 159, status: 'UNREGISTERED' },
+                    { lot: 160, status: 'APPROVED' },
+                    { lot: 161, status: 'APPROVED' },
+                    { lot: 162, status: 'APPROVED', isTenant: true },
+                    { lot: 163, status: 'APPROVED' },
+                    { lot: 164, status: 'APPROVED' },
+                    { lot: 165, status: 'UNREGISTERED' },
+                    { lot: 166, status: 'VACANT' },
+                    { lot: 167, status: 'UNREGISTERED' },
+                    { lot: 168, status: 'APPROVED' }
+                ]
+            },
+
+            // ROW 5 (Bottom / South) - Z = 72
+            {
+                id: 'Blok 5A (Selatan-Barat)', row: 5, col: 'L', z: 72, facing: 'S',
+                lots: [
+                    { lot: 144, status: 'VACANT', isTenant: true, notes: 'Bumbung ungu + dot merah (Penyewa).' },
+                    { lot: 143, status: 'APPROVED' },
+                    { lot: 142, status: 'APPROVED' },
+                    { lot: 141, status: 'APPROVED' },
+                    { lot: 140, status: 'VACANT' },
+                    { lot: 139, status: 'UNREGISTERED' },
+                    { lot: 138, status: 'APPROVED' },
+                    { lot: 137, status: 'APPROVED' },
+                    { lot: 136, status: 'APPROVED' },
+                    { lot: 135, status: 'UNREGISTERED' },
+                    { lot: 134, status: 'APPROVED' },
+                    { lot: 133, status: 'APPROVED' }
+                ]
+            },
+            {
+                id: 'Blok 5B (Selatan-Timur)', row: 5, col: 'R', z: 72, facing: 'S',
+                lots: [
+                    { lot: 132, status: 'VACANT' },
+                    { lot: 131, status: 'UNREGISTERED' },
+                    { lot: 130, status: 'APPROVED' },
+                    { lot: 129, status: 'APPROVED' },
+                    { lot: 128, status: 'APPROVED' },
+                    { lot: 127, status: 'APPROVED' },
+                    { lot: 126, status: 'APPROVED' },
+                    { lot: 125, status: 'UNREGISTERED' },
+                    { lot: 124, status: 'UNREGISTERED' },
+                    { lot: 123, status: 'UNREGISTERED' },
+                    { lot: 122, status: 'VACANT' },
+                    { lot: 121, status: 'APPROVED' }
+                ]
+            }
+        ];
+
+        // ============================================================================
+        // 2. THREE.JS SCENE INITIALIZATION
+        // ============================================================================
+        let scene, camera, renderer, controls;
+        let raycaster, mouse;
+        const houseObjects = new Map(); // lotNumber -> { data, group, roofMesh, labelSprite, tenantGroup, highlightMesh }
+        const tenantMarkers = [];
+        const labelSprites = [];
+        let hoveredLot = null;
+        let selectedLot = null;
+        let currentFilter = 'ALL';
+        let showLabels = true;
+        let cameraTargetAnimation = null;
+
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+            scene.fog = new THREE.FogExp2(0x0f172a, 0.0018);
+
+            camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.set(0, 165, 165);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.06;
+            controls.maxPolarAngle = Math.PI / 2 - 0.04; // Keep above ground
+            controls.minDistance = 25;
+            controls.maxDistance = 360;
+            controls.target.set(0, 0, 5);
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1.2;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+            scene.add(ambientLight);
+
+            const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x1e293b, 0.35);
+            scene.add(hemiLight);
+
+            const dirLight = new THREE.DirectionalLight(0xfffbeb, 0.85);
+            dirLight.position.set(90, 160, 80);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 10;
+            dirLight.shadow.camera.far = 400;
+            const d = 140;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Build World & Houses
+            buildEnvironment();
+            buildAllBlocks();
+            loadInitialLiveLotsSync();
+            updateCountsUI();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('pointermove', onPointerMove);
+            renderer.domElement.addEventListener('pointerdown', onPointerDown);
+            renderer.domElement.addEventListener('pointerup', onPointerUp);
+
+            setupUIEvents();
+            animate();
+        }
+
+        // ============================================================================
+        // 3. ENVIRONMENT, ROADS, FOREST & LANDMARKS
+        // ============================================================================
+        function buildEnvironment() {
+            const envGroup = new THREE.Group();
+
+            // 1. Lush Forest Base Ground
+            const forestGroundGeo = new THREE.PlaneGeometry(520, 420);
+            const forestGroundMat = new THREE.MeshLambertMaterial({ color: 0x14532d });
+            const forestGround = new THREE.Mesh(forestGroundGeo, forestGroundMat);
+            forestGround.rotation.x = -Math.PI / 2;
+            forestGround.position.y = -0.3;
+            forestGround.receiveShadow = true;
+            envGroup.add(forestGround);
+
+            // 2. Cleared Neighborhood Turf Base
+            const turfGeo = new THREE.PlaneGeometry(210, 220);
+            const turfMat = new THREE.MeshLambertMaterial({ color: 0x3f6212 });
+            const turf = new THREE.Mesh(turfGeo, turfMat);
+            turf.rotation.x = -Math.PI / 2;
+            turf.position.y = -0.15;
+            turf.receiveShadow = true;
+            envGroup.add(turf);
+
+            // 3. Main Asphalt Road Network Area
+            const asphaltGeo = new THREE.PlaneGeometry(186, 195);
+            const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+            const asphalt = new THREE.Mesh(asphaltGeo, asphaltMat);
+            asphalt.rotation.x = -Math.PI / 2;
+            asphalt.position.set(0, 0, 0);
+            asphalt.receiveShadow = true;
+            envGroup.add(asphalt);
+
+            // Bottom-Right Entrance Road Extension (as seen in aerial photo)
+            const entranceRoadGeo = new THREE.PlaneGeometry(22, 65);
+            const entranceRoad = new THREE.Mesh(entranceRoadGeo, asphaltMat);
+            entranceRoad.rotation.x = -Math.PI / 2;
+            entranceRoad.position.set(82, 0.01, 110);
+            envGroup.add(entranceRoad);
+
+            // 4. Yellow Speed Bumps (Zebra/Yellow strips between blocks like in photo)
+            const bumpMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+            const bumpPositions = [
+                [-40, -54], [40, -54],
+                [-40, -18], [40, -18],
+                [-40, 18],  [40, 18],
+                [-40, 54],  [40, 54]
+            ];
+            bumpPositions.forEach(([bx, bz]) => {
+                const bumpGeo = new THREE.PlaneGeometry(1.2, 10);
+                const bump = new THREE.Mesh(bumpGeo, bumpMat);
+                bump.rotation.x = -Math.PI / 2;
+                bump.position.set(bx, 0.04, bz);
+                envGroup.add(bump);
+            });
+
+            // 5. Top-Left Utility / Water Pump Station (Concrete Compound + White Building + Blue Pipes)
+            const utilGroup = new THREE.Group();
+            utilGroup.position.set(-76, 0, -76);
+
+            const slab = new THREE.Mesh(
+                new THREE.BoxGeometry(28, 0.4, 24),
+                new THREE.MeshLambertMaterial({ color: 0xd6d3d1 })
+            );
+            slab.position.y = 0.2;
+            utilGroup.add(slab);
+
+            const pumpHouse = new THREE.Mesh(
+                new THREE.BoxGeometry(9, 6.5, 8),
+                new THREE.MeshLambertMaterial({ color: 0xf8fafc })
+            );
+            pumpHouse.position.set(-5, 3.4, -2);
+            pumpHouse.castShadow = true;
+            utilGroup.add(pumpHouse);
+
+            // Blue pipe structures
+            const pipeMat = new THREE.MeshLambertMaterial({ color: 0x0284c7 });
+            for (let i = 0; i < 3; i++) {
+                const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 2.5, 12), pipeMat);
+                tank.position.set(4 + i * 3, 1.5, 4);
+                utilGroup.add(tank);
+            }
+            envGroup.add(utilGroup);
+
+            // 6. Bottom-Right Communication Tower & Guardhouse
+            const towerGroup = new THREE.Group();
+            towerGroup.position.set(95, 0, 125);
+            const towerBase = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.2, 3.5, 22, 8, 1, true),
+                new THREE.MeshBasicMaterial({ color: 0xe2e8f0, wireframe: true })
+            );
+            towerBase.position.y = 11;
+            towerGroup.add(towerBase);
+            envGroup.add(towerGroup);
+
+            // 7. Stylized 3D Tropical Forest Trees (Left & Right Sides)
+            const trunkGeo = new THREE.CylinderGeometry(0.6, 0.9, 3.5, 6);
+            const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5c4033 });
+            const canopyGeo = new THREE.DodecahedronGeometry(4.2, 1);
+            const canopyColors = [0x15803d, 0x166534, 0x14532d, 0x22c55e];
+
+            // Generate trees on West (Left) and East (Right) borders
+            for (let i = 0; i < 190; i++) {
+                const isLeft = i % 2 === 0;
+                const xBase = isLeft ? -105 - Math.random() * 55 : 105 + Math.random() * 55;
+                const zBase = -110 + Math.random() * 230;
+
+                const tree = new THREE.Group();
+                const scale = 0.75 + Math.random() * 0.85;
+
+                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                trunk.position.y = 1.75;
+                tree.add(trunk);
+
+                const cMat = new THREE.MeshLambertMaterial({
+                    color: canopyColors[i % canopyColors.length]
+                });
+                const canopy = new THREE.Mesh(canopyGeo, cMat);
+                canopy.position.y = 5.2;
+                canopy.castShadow = true;
+                tree.add(canopy);
+
+                tree.position.set(xBase, 0, zBase);
+                tree.scale.set(scale, scale, scale);
+                envGroup.add(tree);
+            }
+
+            scene.add(envGroup);
+        }
+
+        // ============================================================================
+        // 4. 3D TERRACE HOUSE BUILDER & LABEL GENERATOR
+        // ============================================================================
+        function createLabelTexture(lotNumber, statusKey, isTenant) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 160;
+            canvas.height = 80;
+            const ctx = canvas.getContext('2d');
+
+            // Rounded pill background
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.beginPath();
+            ctx.roundRect(10, 12, 140, 56, 16);
+            ctx.fill();
+
+            // Border color based on status
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = STATUS_CONFIG[statusKey].hex;
+            ctx.stroke();
+
+            // Lot Number Text
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 34px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(String(lotNumber), isTenant ? 70 : 80, 41);
+
+            // Small Red Dot inside badge if tenant
+            if (isTenant) {
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(122, 40, 11, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        // Shared Geometries for performance
+        const houseWidth = 5.4;
+        const houseDepth = 15.5;
+        const wallHeight = 5.6;
+
+        const bodyGeo = new THREE.BoxGeometry(houseWidth - 0.15, wallHeight, houseDepth);
+        const bodyMat = new THREE.MeshLambertMaterial({ color: 0xf1f5f9 });
+
+        const dividerGeo = new THREE.BoxGeometry(0.25, wallHeight + 0.6, houseDepth + 0.4);
+        const dividerMat = new THREE.MeshLambertMaterial({ color: 0xcbd5e1 });
+
+        const porchGeo = new THREE.BoxGeometry(houseWidth - 0.3, 0.35, 3.8);
+        const porchMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+
+        const acUnitGeo = new THREE.BoxGeometry(1.1, 0.7, 1.1);
+        const acUnitMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+
+        const windowGeo = new THREE.PlaneGeometry(1.6, 1.2);
+        const windowMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+
+        function createPitchedRoofGeometry(width, depth, ridgeHeight) {
+            const geom = new THREE.BufferGeometry();
+            const hw = width / 2;
+            const hd = depth / 2;
+
+            // Two sloped rectangles (front slope & back slope) + 2 side triangles
+            const vertices = new Float32Array([
+                // Front slope
+                -hw, 0,  hd,
+                 hw, 0,  hd,
+                 hw, ridgeHeight, 0,
+                -hw, 0,  hd,
+                 hw, ridgeHeight, 0,
+                -hw, ridgeHeight, 0,
+
+                // Back slope
+                -hw, ridgeHeight, 0,
+                 hw, ridgeHeight, 0,
+                 hw, 0, -hd,
+                -hw, ridgeHeight, 0,
+                 hw, 0, -hd,
+                -hw, 0, -hd,
+
+                // Left gable triangle
+                -hw, 0, -hd,
+                -hw, 0,  hd,
+                -hw, ridgeHeight, 0,
+
+                // Right gable triangle
+                 hw, 0,  hd,
+                 hw, 0, -hd,
+                 hw, ridgeHeight, 0
+            ]);
+
+            geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geom.computeVertexNormals();
+            return geom;
+        }
+
+        const sharedRoofGeo = createPitchedRoofGeometry(houseWidth - 0.08, houseDepth - 1.2, 2.5);
+
+        function buildAllBlocks() {
+            BLOCKS_DEFINITION.forEach(block => {
+                const count = block.lots.length;
+                // Left column blocks centered around X = -42, Right column blocks centered around X = +42
+                const blockCenterX = block.col === 'L' ? -42 : 42;
+                const totalBlockWidth = count * houseWidth;
+                const startX = blockCenterX - totalBlockWidth / 2 + houseWidth / 2;
+
+                // Concrete sidewalk kerb under the entire terrace block
+                const kerbGeo = new THREE.BoxGeometry(totalBlockWidth + 4, 0.35, houseDepth + 4);
+                const kerbMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+                const kerb = new THREE.Mesh(kerbGeo, kerbMat);
+                kerb.position.set(blockCenterX, 0.17, block.z);
+                kerb.receiveShadow = true;
+                scene.add(kerb);
+
+                block.lots.forEach((lotInfo, idx) => {
+                    const x = startX + idx * houseWidth;
+                    const z = block.z;
+
+                    const houseGroup = new THREE.Group();
+                    houseGroup.position.set(x, 0.35, z);
+
+                    // 1. Main 2-Storey House Body
+                    const body = new THREE.Mesh(bodyGeo, bodyMat);
+                    body.position.y = wallHeight / 2;
+                    body.castShadow = true;
+                    body.receiveShadow = true;
+                    houseGroup.add(body);
+
+                    // Party wall divider between terrace lots
+                    const divider = new THREE.Mesh(dividerGeo, dividerMat);
+                    divider.position.set(houseWidth / 2, wallHeight / 2, 0);
+                    houseGroup.add(divider);
+
+                    // Front Porch Canopy & Windows
+                    const frontDir = block.facing === 'S' ? 1 : -1;
+                    const porch = new THREE.Mesh(porchGeo, porchMat);
+                    porch.position.set(0, 2.8, frontDir * (houseDepth / 2 + 1.1));
+                    houseGroup.add(porch);
+
+                    const winUpper = new THREE.Mesh(windowGeo, windowMat);
+                    winUpper.position.set(0, 4.2, frontDir * (houseDepth / 2 + 0.05));
+                    if (frontDir === -1) winUpper.rotation.y = Math.PI;
+                    houseGroup.add(winUpper);
+
+                    // 2. Colored Pitched Roof (Status Color)
+                    const statusCfg = STATUS_CONFIG[lotInfo.status];
+                    const roofMat = new THREE.MeshStandardMaterial({
+                        color: statusCfg.roofColor,
+                        roughness: 0.45,
+                        metalness: 0.1,
+                        emissive: 0x000000
+                    });
+                    const roofMesh = new THREE.Mesh(sharedRoofGeo, roofMat);
+                    roofMesh.position.y = wallHeight;
+                    roofMesh.castShadow = true;
+                    roofMesh.userData = { lot: lotInfo.lot };
+                    body.userData = { lot: lotInfo.lot };
+                    houseGroup.add(roofMesh);
+
+                    // Rooftop detail (Water tank / skylight box like in aerial photo)
+                    const roofBox = new THREE.Mesh(acUnitGeo, acUnitMat);
+                    roofBox.position.set(0.8, wallHeight + 1.1, -frontDir * 2.5);
+                    houseGroup.add(roofBox);
+
+                    // 3. Selection / Hover Highlight Wireframe Box
+                    const hlGeo = new THREE.BoxGeometry(houseWidth + 0.3, wallHeight + 3.2, houseDepth + 0.6);
+                    const hlMat = new THREE.MeshBasicMaterial({
+                        color: 0x38bdf8,
+                        wireframe: true,
+                        transparent: true,
+                        opacity: 0.0
+                    });
+                    const highlightMesh = new THREE.Mesh(hlGeo, hlMat);
+                    highlightMesh.position.y = (wallHeight + 3) / 2;
+                    houseGroup.add(highlightMesh);
+
+                    // 4. Red Tenant Marker (3D Glowing Red Sphere + Ring on Roof)
+                    const tenantGroup = new THREE.Group();
+                    tenantGroup.position.set(0, wallHeight + 4.8, 0);
+
+                    const redSphere = new THREE.Mesh(
+                        new THREE.SphereGeometry(1.15, 16, 16),
+                        new THREE.MeshBasicMaterial({ color: 0xef4444 })
+                    );
+                    const whiteHalo = new THREE.Mesh(
+                        new THREE.RingGeometry(1.3, 1.75, 24),
+                        new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+                    );
+                    whiteHalo.rotation.x = -Math.PI / 2;
+                    tenantGroup.add(redSphere);
+                    tenantGroup.add(whiteHalo);
+                    tenantGroup.visible = Boolean(lotInfo.isTenant);
+                    houseGroup.add(tenantGroup);
+                    tenantMarkers.push(tenantGroup);
+
+                    // 5. Crisp 3D Lot Number Sprite
+                    const labelTex = createLabelTexture(lotInfo.lot, lotInfo.status, Boolean(lotInfo.isTenant));
+                    const labelMat = new THREE.SpriteMaterial({ map: labelTex, depthTest: false });
+                    const labelSprite = new THREE.Sprite(labelMat);
+                    labelSprite.position.set(0, wallHeight + 2.9, 0);
+                    labelSprite.scale.set(4.8, 2.4, 1);
+                    labelSprite.renderOrder = 10;
+                    houseGroup.add(labelSprite);
+                    labelSprites.push(labelSprite);
+
+                    scene.add(houseGroup);
+
+                    // Store in Map
+                    houseObjects.set(lotInfo.lot, {
+                        lot: lotInfo.lot,
+                        blockId: block.id,
+                        status: lotInfo.status,
+                        isTenant: Boolean(lotInfo.isTenant),
+                        notes: lotInfo.notes || '',
+                        group: houseGroup,
+                        roofMesh,
+                        bodyMesh: body,
+                        labelSprite,
+                        tenantGroup,
+                        highlightMesh
+                    });
+                });
+            });
+        }
+
+        // ============================================================================
+        // 5. INTERACTION, FILTERING & LIVE EDITING
+        // ============================================================================
+        let pointerDownPos = { x: 0, y: 0 };
+
+        function onPointerDown(event) {
+            pointerDownPos.x = event.clientX;
+            pointerDownPos.y = event.clientY;
+        }
+
+        function onPointerUp(event) {
+            const dx = Math.abs(event.clientX - pointerDownPos.x);
+            const dy = Math.abs(event.clientY - pointerDownPos.y);
+            if (dx < 6 && dy < 6) {
+                // Click detected
+                if (hoveredLot) {
+                    selectLot(hoveredLot);
+                }
+            }
+        }
+
+        function onPointerMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const interactiveMeshes = [];
+            houseObjects.forEach(obj => {
+                interactiveMeshes.push(obj.roofMesh, obj.bodyMesh);
+            });
+
+            const intersects = raycaster.intersectObjects(interactiveMeshes, false);
+            const tooltip = document.getElementById('hover-tooltip');
+
+            if (intersects.length > 0) {
+                const hitLot = intersects[0].object.userData.lot;
+                if (hoveredLot !== hitLot) {
+                    if (hoveredLot && hoveredLot !== selectedLot) {
+                        setLotHighlight(hoveredLot, false);
+                    }
+                    hoveredLot = hitLot;
+                    if (hoveredLot !== selectedLot) {
+                        setLotHighlight(hoveredLot, true, 0xfacc15);
+                    }
+                }
+
+                // Update floating tooltip
+                const data = houseObjects.get(hitLot);
+                const cfg = STATUS_CONFIG[data.status];
+                document.getElementById('tt-lot').textContent = `Lot ${data.lot}`;
+                document.getElementById('tt-status').textContent = cfg.label;
+                document.getElementById('tt-dot').className = `w-2.5 h-2.5 rounded-full ${cfg.dotClass}`;
+                const ttMember = document.getElementById('tt-member');
+                if (data.memberName) {
+                    ttMember.textContent = data.memberName;
+                    ttMember.classList.remove('hidden');
+                } else {
+                    ttMember.classList.add('hidden');
+                }
+                const ttTenant = document.getElementById('tt-tenant');
+                if (data.isTenant) {
+                    ttTenant.classList.remove('hidden');
+                } else {
+                    ttTenant.classList.add('hidden');
+                }
+
+                tooltip.style.left = `${event.clientX}px`;
+                tooltip.style.top = `${event.clientY}px`;
+                tooltip.classList.remove('hidden');
+                document.body.style.cursor = 'pointer';
+            } else {
+                if (hoveredLot && hoveredLot !== selectedLot) {
+                    setLotHighlight(hoveredLot, false);
+                }
+                hoveredLot = null;
+                tooltip.classList.add('hidden');
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        function setLotHighlight(lotNumber, active, colorHex = 0x38bdf8) {
+            const obj = houseObjects.get(lotNumber);
+            if (!obj) return;
+            obj.highlightMesh.material.color.setHex(colorHex);
+            obj.highlightMesh.material.opacity = active ? 0.85 : 0.0;
+            obj.roofMesh.material.emissive.setHex(active ? 0x222222 : 0x000000);
+        }
+
+        function selectLot(lotNumber, flyTo = false) {
+            if (selectedLot && selectedLot !== lotNumber) {
+                setLotHighlight(selectedLot, false);
+            }
+            selectedLot = lotNumber;
+            const obj = houseObjects.get(lotNumber);
+            if (!obj) return;
+
+            setLotHighlight(lotNumber, true, 0x38bdf8);
+
+            // Populate Inspector Drawer
+            const cfg = STATUS_CONFIG[obj.status];
+            document.getElementById('insp-block').textContent = obj.blockId;
+            document.getElementById('insp-lot').textContent = obj.lot;
+            const badge = document.getElementById('insp-status-badge');
+            badge.textContent = cfg.label;
+            badge.className = `px-2.5 py-1 rounded-lg font-bold text-xs ${cfg.badgeClass}`;
+
+            document.getElementById('insp-select-status').value = obj.status;
+            document.getElementById('insp-check-tenant').checked = obj.isTenant;
+            document.getElementById('insp-notes').value = obj.notes || '';
+
+            // Update read-only notes if present
+            const readonlyNotesBox = document.getElementById('insp-readonly-notes-box');
+            const readonlyNotesEl = document.getElementById('insp-readonly-notes');
+            if (readonlyNotesBox && readonlyNotesEl) {
+                if (obj.notes && obj.notes.trim()) {
+                    readonlyNotesEl.textContent = obj.notes.trim();
+                    readonlyNotesBox.classList.remove('hidden');
+                } else {
+                    readonlyNotesBox.classList.add('hidden');
+                }
+            }
+
+            const memberBox = document.getElementById('insp-member-box');
+            if (obj.memberName) {
+                document.getElementById('insp-member-name').textContent = obj.memberName;
+                document.getElementById('insp-member-no').textContent = obj.memberNo || 'Ahli Berdaftar';
+                document.getElementById('insp-member-meta').textContent = `${obj.isTenant ? 'Penyewa' : 'Pemilik'} • ${obj.memberRole || 'Ahli Biasa'}`;
+                memberBox.classList.remove('hidden');
+            } else {
+                memberBox.classList.add('hidden');
+            }
+
+            updateEditPermissionsUI();
+
+            const drawer = document.getElementById('inspector-drawer');
+            drawer.classList.remove('translate-x-[120%]');
+
+            if (flyTo) {
+                focusCameraOnLot(lotNumber);
+            }
+        }
+
+        function focusCameraOnLot(lotNumber) {
+            const obj = houseObjects.get(lotNumber);
+            if (!obj) return;
+            const targetPos = obj.group.position.clone();
+            cameraTargetAnimation = {
+                targetLookAt: new THREE.Vector3(targetPos.x, 4, targetPos.z),
+                targetCamPos: new THREE.Vector3(targetPos.x + 18, 42, targetPos.z + 42),
+                progress: 0
+            };
+        }
+
+        function applyCategoryFilter(filterKey) {
+            currentFilter = filterKey;
+            houseObjects.forEach(obj => {
+                let match = false;
+                if (filterKey === 'ALL') match = true;
+                else if (filterKey === 'TENANT') match = obj.isTenant;
+                else match = obj.status === filterKey;
+
+                // Visual emphasis on matching houses
+                obj.roofMesh.material.transparent = !match;
+                obj.roofMesh.material.opacity = match ? 1.0 : 0.18;
+                obj.bodyMesh.material.transparent = !match;
+                obj.bodyMesh.material.opacity = match ? 1.0 : 0.22;
+                obj.labelSprite.visible = showLabels && match;
+            });
+        }
+
+        function updateCountsUI() {
+            let counts = { ALL: 0, APPROVED: 0, QUERY: 0, VACANT: 0, TENANT: 0, UNREGISTERED: 0 };
+            houseObjects.forEach(obj => {
+                counts.ALL++;
+                counts[obj.status]++;
+                if (obj.isTenant) counts.TENANT++;
+            });
+
+            Object.keys(counts).forEach(k => {
+                const el = document.getElementById(`count-${k}`);
+                if (el) el.textContent = counts[k];
+            });
+
+            const approvedSummaryEl = document.getElementById('note-approved-summary');
+            if (approvedSummaryEl) {
+                approvedSummaryEl.textContent = `${counts.APPROVED} Lot Diluluskan`;
+            }
+        }
+
+        function applyLiveLotsMap(liveLotsRecord) {
+            if (!liveLotsRecord || typeof liveLotsRecord !== 'object') return;
+            const kuiriLots = [];
+
+            houseObjects.forEach((obj, lotNum) => {
+                // Skip Rumah 001 (only lots 121-232 exist in houseObjects anyway)
+                const entry = liveLotsRecord[String(lotNum)];
+                if (entry) {
+                    const newStatus = entry.status || obj.status;
+                    const newTenant = entry.status === 'QUERY' ? Boolean(obj.isTenant) : (typeof entry.isTenant === 'boolean' ? entry.isTenant : obj.isTenant);
+                    obj.status = newStatus;
+                    obj.isTenant = newTenant;
+                    obj.memberName = entry.name || '';
+                    obj.memberNo = entry.memberNo || '';
+                    obj.memberRole = entry.role || 'Ahli Biasa';
+                    if (entry.notes && !obj.notes) {
+                        obj.notes = entry.notes;
+                    }
+                    if (newStatus === 'QUERY') {
+                        kuiriLots.push(`Lot ${lotNum}`);
+                    }
+
+                    if (STATUS_CONFIG[newStatus]) {
+                        obj.roofMesh.material.color.setHex(STATUS_CONFIG[newStatus].roofColor);
+                    }
+                    obj.tenantGroup.visible = newTenant;
+
+                    const newTex = createLabelTexture(obj.lot, newStatus, newTenant);
+                    if (obj.labelSprite.material.map) obj.labelSprite.material.map.dispose();
+                    obj.labelSprite.material.map = newTex;
+                    obj.labelSprite.material.needsUpdate = true;
+                }
+            });
+
+            const kuiriSummaryEl = document.getElementById('note-kuiri-summary');
+            if (kuiriSummaryEl && kuiriLots.length > 0) {
+                kuiriSummaryEl.textContent = kuiriLots.join(', ');
+            }
+
+            updateCountsUI();
+            applyCategoryFilter(currentFilter);
+            if (selectedLot) {
+                selectLot(selectedLot, false);
+            }
+        }
+
+        // Permission check for editing lot data (Admin Utama & Setiausaha only)
+        let canEditLot = false;
+
+        function checkInitialPermissions() {
+            try {
+                // Pastikan hanya Ahli yang Diluluskan dibenarkan melihat peta (Tetamu akan di-redirect ke Dashboard)
+                const isApproved = localStorage.getItem('tmf2_is_approved_member');
+                if (isApproved === '0') {
+                    window.location.replace('/');
+                    return;
+                }
+
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('canEdit')) {
+                    canEditLot = urlParams.get('canEdit') === '1' || urlParams.get('canEdit') === 'true';
+                } else {
+                    const cached = localStorage.getItem('tmf2_map_can_edit');
+                    canEditLot = cached === '1' || cached === 'true';
+                }
+            } catch (e) {
+                canEditLot = false;
+            }
+            updateEditPermissionsUI();
+        }
+
+        function updateEditPermissionsUI() {
+            const editContainer = document.getElementById('insp-edit-container');
+            const readonlyContainer = document.getElementById('insp-readonly-container');
+            if (editContainer && readonlyContainer) {
+                if (canEditLot) {
+                    editContainer.classList.remove('hidden');
+                    readonlyContainer.classList.add('hidden');
+                } else {
+                    editContainer.classList.add('hidden');
+                    readonlyContainer.classList.remove('hidden');
+                }
+            }
+        }
+
+        function loadInitialLiveLotsSync() {
+            checkInitialPermissions();
+            try {
+                const raw = localStorage.getItem('tmf2_live_map_lots');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    applyLiveLotsMap(parsed);
+                }
+            } catch (e) {}
+
+            window.addEventListener('message', (event) => {
+                if (event.data) {
+                    if (typeof event.data.canEdit === 'boolean') {
+                        canEditLot = event.data.canEdit;
+                        try {
+                            localStorage.setItem('tmf2_map_can_edit', canEditLot ? '1' : '0');
+                        } catch (e) {}
+                        updateEditPermissionsUI();
+                    }
+                    if (event.data.type === 'SYNC_MAP_LOTS' && event.data.lots) {
+                        applyLiveLotsMap(event.data.lots);
+                    }
+                }
+            });
+        }
+
+        function setupUIEvents() {
+            // Filter Buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    applyCategoryFilter(btn.dataset.filter);
+                });
+            });
+
+            // Search Lot
+            const triggerSearch = () => {
+                const val = parseInt(document.getElementById('lot-search').value, 10);
+                if (houseObjects.has(val)) {
+                    selectLot(val, true);
+                } else {
+                    showToast('Masukkan No. Lot sah antara 121 hingga 232');
+                }
+            };
+            document.getElementById('btn-search').addEventListener('click', triggerSearch);
+            document.getElementById('lot-search').addEventListener('keydown', e => {
+                if (e.key === 'Enter') triggerSearch();
+            });
+
+            // Helper to keep Pause / Putar button in sync with controls.autoRotate
+            const updateAutoRotateButtonUI = () => {
+                const btn = document.getElementById('btn-autorotate');
+                const iconPause = document.getElementById('icon-autorotate-pause');
+                const iconPlay = document.getElementById('icon-autorotate-play');
+                const textSpan = document.getElementById('text-autorotate');
+                if (!btn || !iconPause || !iconPlay || !textSpan) return;
+
+                const isRotating = Boolean(controls && controls.autoRotate);
+                if (isRotating) {
+                    // Sedang berputar -> Tunjuk "Pause"
+                    iconPause.classList.remove('hidden');
+                    iconPlay.classList.add('hidden');
+                    textSpan.textContent = 'Pause';
+                    btn.title = 'Jeda Putaran (Pause)';
+                    btn.classList.add('bg-emerald-600', 'text-white', 'hover:bg-emerald-500', 'border-emerald-500/50', 'shadow');
+                    btn.classList.remove('bg-slate-800', 'text-slate-200', 'hover:bg-slate-700', 'border-slate-700');
+                } else {
+                    // Dijeda (paused) -> Tunjuk "Putar"
+                    iconPause.classList.add('hidden');
+                    iconPlay.classList.remove('hidden');
+                    textSpan.textContent = 'Putar';
+                    btn.title = 'Pusing Automatik (Putar)';
+                    btn.classList.remove('bg-emerald-600', 'text-white', 'hover:bg-emerald-500', 'border-emerald-500/50', 'shadow');
+                    btn.classList.add('bg-slate-800', 'text-slate-200', 'hover:bg-slate-700', 'border-slate-700');
+                }
+            };
+
+            // Initialize button state (default rotating = Pause)
+            updateAutoRotateButtonUI();
+
+            // Camera View Presets
+            document.getElementById('btn-view-3d').addEventListener('click', () => {
+                cameraTargetAnimation = {
+                    targetLookAt: new THREE.Vector3(0, 0, 5),
+                    targetCamPos: new THREE.Vector3(0, 165, 165),
+                    progress: 0
+                };
+                updateAutoRotateButtonUI();
+            });
+
+            document.getElementById('btn-view-top').addEventListener('click', () => {
+                controls.autoRotate = false;
+                cameraTargetAnimation = {
+                    targetLookAt: new THREE.Vector3(0, 0, 0),
+                    targetCamPos: new THREE.Vector3(0, 245, 0.1),
+                    progress: 0
+                };
+                updateAutoRotateButtonUI();
+            });
+
+            document.getElementById('btn-autorotate').addEventListener('click', () => {
+                controls.autoRotate = !controls.autoRotate;
+                controls.autoRotateSpeed = 1.2;
+                updateAutoRotateButtonUI();
+            });
+
+            document.getElementById('btn-toggle-labels').addEventListener('click', (e) => {
+                showLabels = !showLabels;
+                e.currentTarget.classList.toggle('bg-emerald-600', showLabels);
+                applyCategoryFilter(currentFilter);
+            });
+
+            // Legend Minimize
+            document.getElementById('btn-minimize-legend').addEventListener('click', (e) => {
+                const content = document.getElementById('legend-content');
+                content.classList.toggle('hidden');
+                e.currentTarget.textContent = content.classList.contains('hidden') ? 'Besarkan' : 'Kecilkan';
+            });
+
+            // Inspector Drawer Actions
+            document.getElementById('btn-close-inspector').addEventListener('click', () => {
+                document.getElementById('inspector-drawer').classList.add('translate-x-[120%]');
+                if (selectedLot) {
+                    setLotHighlight(selectedLot, false);
+                    selectedLot = null;
+                }
+            });
+
+            document.getElementById('btn-focus-lot').addEventListener('click', () => {
+                if (selectedLot) focusCameraOnLot(selectedLot);
+            });
+
+            document.getElementById('btn-save-lot').addEventListener('click', () => {
+                if (!selectedLot) return;
+                if (!canEditLot) {
+                    showToast('Perubahan ini hanya boleh diubah oleh role Admin Utama dan Setiausaha sahaja.');
+                    return;
+                }
+
+                const obj = houseObjects.get(selectedLot);
+                const newStatus = document.getElementById('insp-select-status').value;
+                const newTenant = document.getElementById('insp-check-tenant').checked;
+                const newNotes = document.getElementById('insp-notes').value;
+
+                obj.status = newStatus;
+                obj.isTenant = newTenant;
+                obj.notes = newNotes;
+
+                // Update 3D Roof Color & Label Sprite & Red Dot
+                obj.roofMesh.material.color.setHex(STATUS_CONFIG[newStatus].roofColor);
+                obj.tenantGroup.visible = newTenant;
+
+                const newTex = createLabelTexture(obj.lot, newStatus, newTenant);
+                obj.labelSprite.material.map.dispose();
+                obj.labelSprite.material.map = newTex;
+                obj.labelSprite.material.needsUpdate = true;
+
+                // Refresh UI Counters & Badge
+                updateCountsUI();
+                selectLot(selectedLot, false);
+                applyCategoryFilter(currentFilter);
+                showToast(`Lot ${selectedLot} berjaya dikemaskini!`);
+
+                // Send update to parent application
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'LOT_UPDATED_BY_ADMIN',
+                        lot: selectedLot,
+                        status: newStatus,
+                        isTenant: newTenant,
+                        notes: newNotes
+                    }, '*');
+                }
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2800);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // ============================================================================
+        // 6. ANIMATION LOOP
+        // ============================================================================
+        let clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsed = clock.getElapsedTime();
+
+            // Gentle floating & pulsing animation for the 8 Red Dot (Tenant) markers
+            tenantMarkers.forEach((marker, idx) => {
+                if (marker.visible) {
+                    marker.position.y = wallHeight + 4.8 + Math.sin(elapsed * 3.5 + idx) * 0.45;
+                }
+            });
+
+            // Smooth Camera Fly-To Transition
+            if (cameraTargetAnimation) {
+                cameraTargetAnimation.progress += 0.06;
+                const t = Math.min(cameraTargetAnimation.progress, 1);
+                camera.position.lerp(cameraTargetAnimation.targetCamPos, t * 0.18);
+                controls.target.lerp(cameraTargetAnimation.targetLookAt, t * 0.18);
+                if (camera.position.distanceTo(cameraTargetAnimation.targetCamPos) < 0.8) {
+                    cameraTargetAnimation = null;
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.onload = initScene;
+    </script>
+</body>
+</html>

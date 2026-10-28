@@ -1,0 +1,471 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;650;700;800&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Global mobile-friendly viewport reset */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100vw;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  background-color: #faf8f5;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Global reset for all inputs, selects, and textareas to ensure perfect vertical alignment and prevent clipping */
+input, select, textarea {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif !important;
+  line-height: 1.25rem !important; /* Ensure explicit line-height */
+  box-sizing: border-box !important;
+}
+
+/* Specifically adjust native select elements for perfect centering across all rendering engines */
+select {
+  padding-top: 0.375rem !important; /* py-1.5 */
+  padding-bottom: 0.375rem !important; /* py-1.5 */
+  height: 2.25rem !important; /* Standard height (h-9) */
+  line-height: normal !important;
+}
+
+@keyframes mascotFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ========================================================================= */
+/* GLOBAL DARK MODE CSS LOGIC & COMPONENT HARMONIZATION                      */
+/* ========================================================================= */
+
+html.dark,
+html.dark body,
+html.dark #root {
+  background-color: #0b0f19 !important;
+  color: #f1f5f9;
+}
+
+/* Background surface overrides in dark mode */
+html.dark .bg-white {
+  background-color: #151d2f !important;
+}
+
+html.dark .bg-white\/90,
+html.dark .bg-white\/95 {
+  background-color: rgba(21, 29, 47, 0.95) !important;
+}
+
+html.dark .bg-white\/80 {
+  background-color: rgba(21, 29, 47, 0.8) !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-gray-50,
+html.dark .bg-\[\#faf8f5\] {
+  background-color: #0b0f19 !important;
+}
+
+html.dark .bg-slate-50\/50,
+html.dark .bg-gray-50\/50 {
+  background-color: rgba(21, 29, 47, 0.5) !important;
+}
+
+html.dark .bg-slate-100,
+html.dark .bg-gray-100 {
+  background-color: #1a2438 !important;
+}
+
+html.dark .bg-slate-100\/60,
+html.dark .bg-slate-100\/80 {
+  background-color: rgba(26, 36, 56, 0.7) !important;
+}
+
+html.dark .bg-slate-200,
+html.dark .bg-gray-200 {
+  background-color: #243048 !important;
+}
+
+/* Borders in dark mode */
+html.dark .border-slate-100,
+html.dark .border-slate-150,
+html.dark .border-slate-200,
+html.dark .border-gray-100,
+html.dark .border-gray-150,
+html.dark .border-gray-200 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .border-dashed {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .divide-slate-50 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Typography in dark mode - NO BLACK OR DARK TEXT ALLOWED */
+html.dark,
+html.dark body,
+html.dark #root {
+  background-color: #0b0f19 !important;
+  color: #f8fafc !important;
+}
+
+html.dark :is(h1, h2, h3, h4, h5, h6, label, legend, caption, th) {
+  color: #f8fafc !important;
+}
+
+html.dark :is(p, li, dt, dd, summary) {
+  color: #e2e8f0;
+}
+
+/* Explicit and generic black / dark text overrides */
+html.dark .text-black,
+html.dark [class*="text-black"],
+html.dark [class*="text-slate-9"],
+html.dark [class*="text-slate-8"],
+html.dark [class*="text-gray-9"],
+html.dark [class*="text-gray-8"],
+html.dark [class*="text-zinc-9"],
+html.dark [class*="text-zinc-8"],
+html.dark [class*="text-neutral-9"],
+html.dark [class*="text-neutral-8"] {
+  color: #f8fafc !important;
+}
+
+html.dark [class*="text-slate-7"],
+html.dark [class*="text-gray-7"],
+html.dark [class*="text-zinc-7"],
+html.dark [class*="text-neutral-7"] {
+  color: #cbd5e1 !important;
+}
+
+html.dark [class*="text-slate-6"],
+html.dark [class*="text-gray-6"],
+html.dark [class*="text-zinc-6"],
+html.dark [class*="text-neutral-6"],
+html.dark [class*="text-slate-5"],
+html.dark [class*="text-gray-5"],
+html.dark [class*="text-slate-4"],
+html.dark [class*="text-gray-4"] {
+  color: #94a3b8 !important;
+}
+
+/* Deep colored dark shades mapped to high-contrast bright tones */
+html.dark [class*="text-indigo-9"],
+html.dark [class*="text-indigo-8"] {
+  color: #a5b4fc !important;
+}
+
+html.dark [class*="text-purple-9"],
+html.dark [class*="text-purple-8"] {
+  color: #d8b4fe !important;
+}
+
+html.dark [class*="text-emerald-9"],
+html.dark [class*="text-emerald-8"] {
+  color: #6ee7b7 !important;
+}
+
+html.dark [class*="text-rose-9"],
+html.dark [class*="text-rose-8"],
+html.dark [class*="text-red-9"],
+html.dark [class*="text-red-8"] {
+  color: #fda4af !important;
+}
+
+html.dark [class*="text-amber-9"],
+html.dark [class*="text-amber-8"],
+html.dark [class*="text-amber-7"],
+html.dark [class*="text-yellow-9"],
+html.dark [class*="text-yellow-8"] {
+  color: #fcd34d !important;
+}
+
+html.dark [class*="text-blue-9"],
+html.dark [class*="text-blue-8"] {
+  color: #93c5fd !important;
+}
+
+html.dark [class*="text-teal-9"],
+html.dark [class*="text-teal-8"] {
+  color: #5eead4 !important;
+}
+
+/* Input, textarea, select controls in dark mode */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.dark select,
+html.dark textarea {
+  background-color: #1a2438 !important;
+  color: #f8fafc !important;
+  border-color: #2e3e5c !important;
+}
+
+html.dark select option {
+  background-color: #151d2f !important;
+  color: #f8fafc !important;
+}
+
+html.dark a {
+  color: inherit;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+  border-color: #6366f1 !important;
+  outline: none !important;
+}
+
+/* Hover surfaces in dark mode */
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-gray-100:hover {
+  background-color: #243048 !important;
+}
+
+/* Card & Dropdown Shadows in dark mode */
+html.dark .shadow-xs,
+html.dark .shadow-sm,
+html.dark .shadow-md,
+html.dark .shadow-lg,
+html.dark .shadow-xl,
+html.dark .shadow-2xl {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Subtle dark tints for colored pill badges in dark mode */
+html.dark .bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.18) !important;
+}
+html.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+}
+html.dark .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+}
+html.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+}
+html.dark .bg-purple-50 {
+  background-color: rgba(168, 85, 247, 0.18) !important;
+}
+html.dark .bg-teal-50 {
+  background-color: rgba(20, 184, 166, 0.18) !important;
+}
+html.dark .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+}
+
+html.dark .text-indigo-600,
+html.dark .text-indigo-700 {
+  color: #a5b4fc !important;
+}
+html.dark .text-emerald-600,
+html.dark .text-emerald-700 {
+  color: #6ee7b7 !important;
+}
+html.dark .text-rose-500,
+html.dark .text-rose-600,
+html.dark .text-rose-700 {
+  color: #fda4af !important;
+}
+html.dark .text-amber-600,
+html.dark .text-amber-700 {
+  color: #fcd34d !important;
+}
+html.dark .text-purple-600,
+html.dark .text-purple-700 {
+  color: #d8b4fe !important;
+}
+html.dark .text-teal-600,
+html.dark .text-teal-700 {
+  color: #5eead4 !important;
+}
+html.dark .text-blue-600,
+html.dark .text-blue-700 {
+  color: #93c5fd !important;
+}
+
+/* Modals & Backdrop */
+html.dark .bg-slate-900\/60,
+html.dark .bg-slate-900\/70 {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* ========================================================================= */
+/* PREMIUM ULTRA-SLEEK CUSTOM SCROLLBAR DESIGN SYSTEM                       */
+/* ========================================================================= */
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Global scrollbar rules for WebKit / Blink browsers (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.38);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(99, 102, 241, 0.75); /* Theme indigo highlight */
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: rgba(79, 70, 229, 0.9);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox standards */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.38) transparent;
+}
+
+/* Global dark mode scrollbar */
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(165, 180, 252, 0.65);
+}
+
+html.dark ::-webkit-scrollbar-thumb:active {
+  background-color: rgba(165, 180, 252, 0.85);
+}
+
+html.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Dedicated Sidebar Scrollbar (Customized for Dark Indigo Navy background) */
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Gently reveal thumb when moving cursor in sidebar area */
+.sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.28);
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(165, 180, 252, 0.85) !important;
+  box-shadow: 0 0 6px rgba(165, 180, 252, 0.4);
+}
+
+.sidebar-scrollbar:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+}
+
+/* Dedicated Main Workspace Scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.38) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.38);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.55);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(99, 102, 241, 0.75);
+}
+
+html.dark .custom-scrollbar {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+html.dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(165, 180, 252, 0.7);
+}
+

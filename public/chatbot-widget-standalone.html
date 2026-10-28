@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget Chatbot Maskot Robot AI Perlembagaan PTMF2 (Plug & Play)</title>
+  <style>
+    /* ========================================================
+       1. GAYA VISUAL MASKOT ROBOT PUTIH GLOSSY (FLOATING BOT)
+       ======================================================== */
+    :root {
+      --bot-width-desktop: 70px;
+      --bot-height-desktop: 82px;
+      --bot-width-mobile: 56px;
+      --bot-height-mobile: 66px;
+      --theme-primary: #4338ca;
+      --theme-dark: #1e1b4b;
+    }
+
+    @keyframes botFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+
+    @keyframes dotBounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1.0); }
+    }
+
+    /* Mascot Container */
+    #ptmf2-bot-mascot {
+      position: fixed;
+      bottom: 96px;
+      right: 20px;
+      width: var(--bot-width-desktop);
+      height: var(--bot-height-desktop);
+      z-index: 99998;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      cursor: grab;
+      transition: left 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.25), top 0.25s ease-out;
+    }
+
+    #ptmf2-bot-mascot.dragging {
+      cursor: grabbing;
+      transition: none !important;
+      transform: scale(1.06);
+    }
+
+    .mascot-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: botFloat 3.8s ease-in-out infinite;
+    }
+
+    #ptmf2-bot-mascot.dragging .mascot-inner {
+      animation: none;
+    }
+
+    .mascot-glow {
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34, 211, 238, 0.3) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Close Button on Top-Right of Mascot */
+    .mascot-close-btn {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #1e293b;
+      color: #ffffff;
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10002;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      transition: all 0.15s ease;
+      line-height: 1;
+    }
+
+    .mascot-close-btn:hover {
+      background: #020617;
+      transform: scale(1.15);
+    }
+
+    /* ========================================================
+       2. TETINGKAP CHAT (SELARAS TEMA LAMAN WEB PTMF2)
+       ======================================================== */
+    #ptmf2-chat-window {
+      position: fixed;
+      bottom: 96px;
+      right: 20px;
+      width: 390px;
+      height: 530px;
+      max-height: 82vh;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.18), 0 0 25px rgba(67, 56, 202, 0.08);
+      z-index: 99999;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      color: #1e293b;
+    }
+
+    #ptmf2-chat-window.open {
+      display: flex;
+      animation: chatOpen 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes chatOpen {
+      from { opacity: 0; transform: scale(0.94) translateY(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Chat Header */
+    .chat-header {
+      padding: 14px 16px;
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .chat-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-header-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chat-header-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 0;
+      letter-spacing: -0.2px;
+    }
+
+    .chat-header-sub {
+      font-size: 10px;
+      color: #c7d2fe;
+      margin: 1px 0 0 0;
+      font-weight: 500;
+    }
+
+    .chat-btn-icon {
+      background: transparent;
+      border: none;
+      color: #c7d2fe;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .chat-btn-icon:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+
+    /* Quick Suggestion Chips (Sebaris & Boleh Dikembangkan) */
+    .chat-quick-section {
+      padding: 8px 12px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .chat-quick-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .chat-quick-title-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chat-quick-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #334155;
+      letter-spacing: 0.5px;
+    }
+
+    .chat-quick-badge {
+      background: #e0e7ff;
+      color: #4338ca;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 9999px;
+    }
+
+    .chat-quick-toggle-btn {
+      background: #6366f1;
+      color: #ffffff;
+      border: none;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s ease;
+    }
+
+    .chat-quick-toggle-btn:hover {
+      background: #4f46e5;
+    }
+
+    .chat-quick-expanded-grid {
+      display: none;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #e2e8f0;
+      max-height: 220px;
+      overflow-y: auto;
+      gap: 6px;
+      grid-template-columns: 1fr;
+    }
+
+    .chat-quick-expanded-grid.open {
+      display: grid;
+    }
+
+    .chip-btn-expanded {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 8px 10px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .chip-btn-expanded:hover {
+      background: #f5f3ff;
+      border-color: #c7d2fe;
+    }
+
+    .chip-btn-num {
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      background: #e0e7ff;
+      color: #4338ca;
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .chip-btn-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1e1b4b;
+    }
+
+    .chip-btn-sub {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+
+    /* Messages Area */
+    .chat-messages {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 13px;
+      background: #f8fafc;
+    }
+
+    .message-row {
+      display: flex;
+      gap: 8px;
+      max-width: 86%;
+    }
+
+    .message-row.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message-bubble {
+      padding: 11px 14px;
+      border-radius: 18px;
+      line-height: 1.5;
+      word-break: break-word;
+      font-size: 13px;
+    }
+
+    .message-row.user .message-bubble {
+      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+      color: #ffffff;
+      border-top-right-radius: 4px;
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    }
+
+    .message-row.bot .message-bubble {
+      background: #ffffff;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+      border-top-left-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .fasal-badge {
+      display: inline-block;
+      font-weight: 800;
+      color: #4338ca;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      padding: 1px 7px;
+      border-radius: 6px;
+      margin: 2px 0;
+    }
+
+    /* Typing Loading Animation */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 10px 14px;
+      background: #ffffff;
+      border: 1px solid #e0e7ff;
+      border-radius: 16px;
+      border-top-left-radius: 4px;
+      width: fit-content;
+      font-size: 12px;
+      font-weight: 600;
+      color: #4338ca;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background: #4f46e5;
+      border-radius: 50%;
+      animation: dotBounce 1.4s infinite ease-in-out both;
+    }
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    /* Footer Input */
+    .chat-footer {
+      padding: 10px 14px;
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .chat-input-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 8px 14px;
+      color: #0f172a;
+      font-size: 13px;
+      outline: none;
+      resize: none;
+      height: 38px;
+      box-sizing: border-box;
+      transition: border 0.15s, background 0.15s;
+    }
+
+    .chat-input:focus {
+      border-color: #4f46e5;
+      background: #ffffff;
+    }
+
+    .chat-send-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: #4f46e5;
+      border: none;
+      color: #ffffff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+      transition: transform 0.1s, background 0.15s;
+    }
+
+    .chat-send-btn:hover { background: #4338ca; }
+    .chat-send-btn:active { transform: scale(0.94); }
+
+    .chat-disclaimer {
+      margin-top: 6px;
+      font-size: 10px;
+      color: #94a3b8;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 640px) {
+      #ptmf2-bot-mascot {
+        width: var(--bot-width-mobile);
+        height: var(--bot-height-mobile);
+        bottom: 84px;
+        right: 14px;
+      }
+
+      #ptmf2-chat-window {
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 80px !important;
+        width: auto !important;
+        height: 72vh !important;
+      }
+    }
+  </style>
+</head>
+<body style="background: #f1f5f9; color: #1e293b; font-family: 'Inter', sans-serif; padding: 24px;">
+
+  <h2>Laman Web Contoh (Ujian Floating Chatbot PTMF2)</h2>
+  <p>Maskot Robot Putih Glossy dengan Eye-Tracking dan Tema Selaras Laman Web.</p>
+
+  <!-- ========================================================
+       HTML KONTENA MASKOT ROBOT
+       ======================================================== -->
+  <div id="ptmf2-bot-mascot" role="button" aria-label="Buka Chatbot Perlembagaan">
+    <button type="button" id="ptmf2-bot-dismiss-btn" class="mascot-close-btn" title="Tutup / Buang Bot">✕</button>
+    <div class="mascot-inner">
+      <div class="mascot-glow"></div>
+      
+      <!-- SVG ROBOT PUTIH GLOSSY MENGIKUT IMEJ -->
+      <svg id="robot-svg" viewBox="0 0 200 235" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%; overflow: visible;">
+        <defs>
+          <filter id="robotCyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#22d3ee" floodOpacity="0.9" />
+          </filter>
+          <linearGradient id="robotHeadGrad" x1="100" y1="18" x2="100" y2="114" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="35%" stopColor="#f8fafc" />
+            <stop offset="75%" stopColor="#e2e8f0" />
+            <stop offset="100%" stopColor="#cbd5e1" />
+          </linearGradient>
+          <linearGradient id="robotVisorGrad" x1="100" y1="36" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#1e293b" />
+            <stop offset="45%" stopColor="#0f172a" />
+            <stop offset="100%" stopColor="#090d16" />
+          </linearGradient>
+          <linearGradient id="robotEarGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#f8fafc" />
+            <stop offset="50%" stopColor="#e2e8f0" />
+            <stop offset="100%" stopColor="#94a3b8" />
+          </linearGradient>
+          <linearGradient id="robotBodyGrad" x1="100" y1="114" x2="100" y2="204" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="30%" stopColor="#f1f5f9" />
+            <stop offset="70%" stopColor="#cbd5e1" />
+            <stop offset="100%" stopColor="#94a3b8" />
+          </linearGradient>
+          <linearGradient id="robotArmGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="40%" stopColor="#e2e8f0" />
+            <stop offset="100%" stopColor="#94a3b8" />
+          </linearGradient>
+          <filter id="softShadow" x="-10%" y="-10%" width="120%" height="130%">
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#0f172a" floodOpacity="0.16" />
+          </filter>
+        </defs>
+
+        <!-- Shadow Bawah -->
+        <ellipse cx="100" cy="226" rx="36" ry="6" fill="#94a3b8" fillOpacity="0.32" />
+
+        <!-- Tangan Kiri & Kanan -->
+        <g filter="url(#softShadow)">
+          <g transform="translate(38, 142) rotate(-16)">
+            <rect x="-14" y="-30" width="28" height="64" rx="14" fill="url(#robotArmGrad)" />
+            <path d="M -8 -24 Q 0 -28 6 -24" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" opacity="0.8" />
+          </g>
+          <g transform="translate(162, 142) rotate(16)">
+            <rect x="-14" y="-30" width="28" height="64" rx="14" fill="url(#robotArmGrad)" />
+            <path d="M -6 -24 Q 0 -28 8 -24" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" opacity="0.8" />
+          </g>
+        </g>
+
+        <!-- Badan Torso -->
+        <g filter="url(#softShadow)">
+          <path d="M 82 110 Q 100 114 118 110 L 122 120 Q 100 126 78 120 Z" fill="#94a3b8" />
+          <path d="M 66 120 C 66 116, 134 116, 134 120 C 146 142, 142 192, 100 200 C 58 192, 54 142, 66 120 Z" fill="url(#robotBodyGrad)" />
+          <path d="M 68 152 L 86 156 L 87 166 L 113 166 L 114 156 L 132 152" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.75" />
+          <ellipse cx="78" cy="132" rx="9" ry="16" fill="#ffffff" opacity="0.65" transform="rotate(-18 78 132)" />
+        </g>
+
+        <!-- Kepala Robot -->
+        <g filter="url(#softShadow)">
+          <rect x="34" y="52" width="18" height="38" rx="9" fill="url(#robotEarGrad)" stroke="#cbd5e1" strokeWidth="1" />
+          <rect x="148" y="52" width="18" height="38" rx="9" fill="url(#robotEarGrad)" stroke="#cbd5e1" strokeWidth="1" />
+          <rect x="80" y="16" width="40" height="8" rx="4" fill="#cbd5e1" />
+          <rect x="44" y="22" width="112" height="88" rx="40" fill="url(#robotHeadGrad)" stroke="#e2e8f0" strokeWidth="1.5" />
+          <path d="M 64 34 Q 100 24 136 34" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" opacity="0.85" />
+          <rect x="54" y="34" width="92" height="64" rx="26" fill="#090d16" stroke="#cbd5e1" strokeWidth="1" />
+          <rect x="56" y="36" width="88" height="60" rx="24" fill="url(#robotVisorGrad)" />
+          <path d="M 66 44 Q 100 38 134 44" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" opacity="0.25" />
+
+          <!-- Elemen Mata & Mulut Mengikut Cursor (Eye-Tracking) -->
+          <g id="robot-face-elements" style="transition: transform 0.08s ease-out;">
+            <!-- Mata Kiri -->
+            <g id="robot-left-eye" style="transform-origin: 78px 65px; transition: transform 0.1s ease;">
+              <path d="M 70 65 C 70 57, 86 57, 86 65 C 86 70, 70 70, 70 65 Z" fill="#38bdf8" filter="url(#robotCyanGlow)" />
+              <circle cx="76" cy="62" r="2" fill="#ffffff" opacity="0.9" />
+            </g>
+            <!-- Mata Kanan -->
+            <g id="robot-right-eye" style="transform-origin: 122px 65px; transition: transform 0.1s ease;">
+              <path d="M 114 65 C 114 57, 130 57, 130 65 C 130 70, 114 70, 114 65 Z" fill="#38bdf8" filter="url(#robotCyanGlow)" />
+              <circle cx="120" cy="62" r="2" fill="#ffffff" opacity="0.9" />
+            </g>
+            <!-- Mulut Senyuman -->
+            <path d="M 93 75 Q 100 84 107 75 Q 100 78 93 75 Z" fill="#38bdf8" filter="url(#robotCyanGlow)" />
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       HTML TETINGKAP CHAT
+       ======================================================== -->
+  <div id="ptmf2-chat-window">
+    <div class="chat-header">
+      <div class="chat-title-group">
+        <div class="chat-header-avatar">🤖</div>
+        <div>
+          <h4 class="chat-header-title">Bot Perlembagaan PTMF2</h4>
+          <p class="chat-header-sub">Fasal 1 - 18 • Rujukan Rasmi</p>
+        </div>
+      </div>
+      <div class="chat-header-actions">
+        <button class="chat-btn-icon" id="ptmf2-chat-clear" title="Kosongkan">🔄</button>
+        <button class="chat-btn-icon" id="ptmf2-chat-close" title="Tutup">✕</button>
+      </div>
+    </div>
+
+    <div class="chat-quick-section" id="ptmf2-quick-section">
+      <div class="chat-quick-bar" id="ptmf2-quick-toggle">
+        <div class="chat-quick-title-group">
+          <span class="chat-quick-label">✨ Cadangan Soalan</span>
+          <span class="chat-quick-badge">6</span>
+        </div>
+        <button type="button" class="chat-quick-toggle-btn" id="ptmf2-quick-btn">
+          <span id="ptmf2-quick-btn-text">Kembangkan</span>
+          <span id="ptmf2-quick-btn-icon">▾</span>
+        </button>
+      </div>
+
+      <div class="chat-quick-expanded-grid" id="ptmf2-quick-grid">
+        <button type="button" class="chip-btn-expanded" data-q="Apakah syarat-syarat untuk menjadi Ahli Biasa pertubuhan mengikut perlembagaan?">
+          <span class="chip-btn-num">1</span>
+          <div>
+            <div class="chip-btn-title">Syarat Ahli Biasa</div>
+            <div class="chip-btn-sub">Apakah syarat-syarat untuk menjadi Ahli Biasa pertubuhan mengikut perlembagaan?</div>
+          </div>
+        </button>
+        <button type="button" class="chip-btn-expanded" data-q="Berapakah bayaran yuran masuk dan yuran bulanan bagi setiap ahli?">
+          <span class="chip-btn-num">2</span>
+          <div>
+            <div class="chip-btn-title">Kadar Yuran Ahli</div>
+            <div class="chip-btn-sub">Berapakah bayaran yuran masuk dan yuran bulanan bagi setiap ahli?</div>
+          </div>
+        </button>
+        <button type="button" class="chip-btn-expanded" data-q="Berapakah had wang tunai dalam tangan yang boleh disimpan oleh Bendahari pada satu-satu masa?">
+          <span class="chip-btn-num">3</span>
+          <div>
+            <div class="chip-btn-title">Had Wang Bendahari</div>
+            <div class="chip-btn-sub">Berapakah had wang tunai dalam tangan yang boleh disimpan oleh Bendahari pada satu-satu masa?</div>
+          </div>
+        </button>
+        <button type="button" class="chip-btn-expanded" data-q="Berapakah jumlah kuorum yang diperlukan untuk Mesyuarat Agung Tahunan atau Khas?">
+          <span class="chip-btn-num">4</span>
+          <div>
+            <div class="chip-btn-title">Kuorum Mesyuarat</div>
+            <div class="chip-btn-sub">Berapakah jumlah kuorum yang diperlukan untuk Mesyuarat Agung Tahunan atau Khas?</div>
+          </div>
+        </button>
+        <button type="button" class="chip-btn-expanded" data-q="Apakah syarat, fasal atau sebab-sebab pemecatan atau pemberhentian ahli?">
+          <span class="chip-btn-num">5</span>
+          <div>
+            <div class="chip-btn-title">Sebab Pemecatan</div>
+            <div class="chip-btn-sub">Apakah syarat, fasal atau sebab-sebab pemecatan atau pemberhentian ahli?</div>
+          </div>
+        </button>
+        <button type="button" class="chip-btn-expanded" data-q="Apakah keterangan dan maksud lambang atau lencana persatuan?">
+          <span class="chip-btn-num">6</span>
+          <div>
+            <div class="chip-btn-title">Makna Logo Persatuan</div>
+            <div class="chip-btn-sub">Apakah keterangan dan maksud lambang atau lencana persatuan?</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="ptmf2-messages-container">
+      <div class="message-row bot">
+        <div class="message-bubble">
+          Salam sejahtera! Saya Bot Rujukan Perlembagaan Persatuan Taman Musytari Fasa 2 (PPM-001-05-28092026). Sila kemukakan soalan berkaitan fasal-fasal perlembagaan pertubuhan ini.
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-footer">
+      <form class="chat-input-form" id="ptmf2-chat-form">
+        <input type="text" class="chat-input" id="ptmf2-input" placeholder="Tanya fasal perlembagaan PTMF2..." autocomplete="off" />
+        <button type="submit" class="chat-send-btn">➔</button>
+      </form>
+      <div class="chat-disclaimer">
+        Rujukan eksklusif teks rasmi Perlembagaan PTMF2 (Fasal 1 - 18)
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       JAVASCRIPT LOGIK
+       ======================================================== -->
+  <script>
+    (function() {
+      const mascot = document.getElementById('ptmf2-bot-mascot');
+      const chatWindow = document.getElementById('ptmf2-chat-window');
+      const chatCloseBtn = document.getElementById('ptmf2-chat-close');
+      const chatClearBtn = document.getElementById('ptmf2-chat-clear');
+      const chatForm = document.getElementById('ptmf2-chat-form');
+      const chatInput = document.getElementById('ptmf2-input');
+      const messagesContainer = document.getElementById('ptmf2-messages-container');
+      const faceElements = document.getElementById('robot-face-elements');
+      const leftEye = document.getElementById('robot-left-eye');
+      const rightEye = document.getElementById('robot-right-eye');
+      const quickToggle = document.getElementById('ptmf2-quick-toggle');
+      const quickGrid = document.getElementById('ptmf2-quick-grid');
+      const quickBtnText = document.getElementById('ptmf2-quick-btn-text');
+      const quickBtnIcon = document.getElementById('ptmf2-quick-btn-icon');
+      const chips = document.querySelectorAll('.chip-btn-expanded, .chip-btn');
+
+      let isDragging = false;
+      let startX = 0, startY = 0;
+      let initMascotX = 0, initMascotY = 0;
+      let hasMoved = false;
+
+      // 1. EYE TRACKING
+      function updateEyes(clientX, clientY) {
+        if (isDragging || !faceElements) return;
+        const rect = mascot.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height * 0.4;
+
+        const dx = clientX - centerX;
+        const dy = clientY - centerY;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist === 0) return;
+
+        const angle = Math.atan2(dy, dx);
+        const maxOffset = window.innerWidth < 640 ? 3.5 : 4.8;
+        const moveDist = Math.min(dist / 24, maxOffset);
+
+        const px = Math.cos(angle) * moveDist;
+        const py = Math.sin(angle) * moveDist;
+
+        faceElements.style.transform = `translate(${px}px, ${py}px)`;
+      }
+
+      window.addEventListener('pointermove', e => updateEyes(e.clientX, e.clientY), { passive: true });
+      window.addEventListener('touchmove', e => {
+        if (e.touches && e.touches[0]) updateEyes(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+
+      // Blinking Cycle
+      setInterval(() => {
+        if (leftEye && rightEye) {
+          leftEye.style.transform = 'scaleY(0.08)';
+          rightEye.style.transform = 'scaleY(0.08)';
+          setTimeout(() => {
+            leftEye.style.transform = 'scaleY(1)';
+            rightEye.style.transform = 'scaleY(1)';
+          }, 160);
+        }
+      }, 4000);
+
+      // 2. DRAGGING & AUTO-SNAP
+      mascot.addEventListener('pointerdown', e => {
+        if (e.button !== 0) return;
+        isDragging = true;
+        hasMoved = false;
+        startX = e.clientX;
+        startY = e.clientY;
+
+        const rect = mascot.getBoundingClientRect();
+        initMascotX = rect.left;
+        initMascotY = rect.top;
+
+        mascot.classList.add('dragging');
+        mascot.setPointerCapture(e.pointerId);
+      });
+
+      mascot.addEventListener('pointermove', e => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        if (!hasMoved && Math.hypot(dx, dy) > 5) {
+          hasMoved = true;
+        }
+
+        if (hasMoved) {
+          mascot.style.left = (initMascotX + dx) + 'px';
+          mascot.style.top = (initMascotY + dy) + 'px';
+          mascot.style.right = 'auto';
+          mascot.style.bottom = 'auto';
+        }
+      });
+
+      function finishDrag(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        mascot.classList.remove('dragging');
+        try { mascot.releasePointerCapture(e.pointerId); } catch (_) {}
+
+        if (!hasMoved) {
+          chatWindow.classList.toggle('open');
+          if (chatWindow.classList.contains('open')) {
+            chatInput.focus();
+          }
+          return;
+        }
+
+        const rect = mascot.getBoundingClientRect();
+        const mascotW = rect.width;
+        const isLeft = (rect.left + mascotW / 2) < window.innerWidth / 2;
+        const margin = window.innerWidth < 640 ? 12 : 20;
+
+        const snapX = isLeft ? margin : (window.innerWidth - mascotW - margin);
+        const clampedY = Math.min(Math.max(50, rect.top), window.innerHeight - rect.height - 80);
+
+        mascot.style.left = snapX + 'px';
+        mascot.style.top = clampedY + 'px';
+      }
+
+      mascot.addEventListener('pointerup', finishDrag);
+      mascot.addEventListener('pointercancel', finishDrag);
+
+      // Actions
+      const dismissBtn = document.getElementById('ptmf2-bot-dismiss-btn');
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          mascot.style.display = 'none';
+          chatWindow.classList.remove('open');
+        });
+        dismissBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+      }
+
+      chatCloseBtn.addEventListener('click', () => chatWindow.classList.remove('open'));
+      chatClearBtn.addEventListener('click', () => {
+        messagesContainer.innerHTML = `
+          <div class="message-row bot">
+            <div class="message-bubble">
+              Salam sejahtera! Saya Bot Rujukan Perlembagaan Persatuan Taman Musytari Fasa 2 (PPM-001-05-28092026). Sila kemukakan soalan berkaitan fasal-fasal perlembagaan pertubuhan ini.
+            </div>
+          </div>`;
+        chatInput.value = '';
+      });
+
+      if (quickToggle && quickGrid) {
+        quickToggle.addEventListener('click', () => {
+          const isOpen = quickGrid.classList.toggle('open');
+          if (quickBtnText) quickBtnText.textContent = isOpen ? 'Lipat' : 'Kembangkan';
+          if (quickBtnIcon) quickBtnIcon.textContent = isOpen ? '▴' : '▾';
+        });
+      }
+
+      chips.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const q = btn.getAttribute('data-q');
+          if (q) {
+            sendMessage(q);
+            if (quickGrid) {
+              quickGrid.classList.remove('open');
+              if (quickBtnText) quickBtnText.textContent = 'Kembangkan';
+              if (quickBtnIcon) quickBtnIcon.textContent = '▾';
+            }
+          }
+        });
+      });
+
+      chatForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        if (text) {
+          sendMessage(text);
+          chatInput.value = '';
+        }
+      });
+
+      async function sendMessage(question) {
+        appendMessage('user', question);
+        const loader = appendLoader();
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        try {
+          const res = await fetch('/api/chat/perlembagaan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: question })
+          });
+
+          if (!res.ok) throw new Error('Ralat sambungan pelayan');
+
+          const data = await res.json();
+          loader.remove();
+          appendMessage('bot', data.reply || "Maaf, maklumat tersebut tiada dalam rujukan saya.");
+        } catch (err) {
+          loader.remove();
+          appendMessage('bot', "Maaf, maklumat tersebut tiada dalam rujukan saya.");
+        }
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      function appendMessage(role, text) {
+        const row = document.createElement('div');
+        row.className = `message-row ${role}`;
+        let formatted = String(text).replace(/[&<>"']/g, s => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[s]));
+        formatted = formatted.replace(/(Fasal\s+\d+(?:\([^)]+\))?)/gi, '<span class="fasal-badge">$1</span>');
+        formatted = formatted.replace(/\n/g, '<br/>');
+        row.innerHTML = `<div class="message-bubble">${formatted}</div>`;
+        messagesContainer.appendChild(row);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      function appendLoader() {
+        const row = document.createElement('div');
+        row.className = 'message-row bot';
+        row.innerHTML = `
+          <div class="typing-indicator">
+            <span>Menyemak perlembagaan</span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>`;
+        messagesContainer.appendChild(row);
+        return row;
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,11 +1,20 @@
-<div align="center">
+# Persatuan Taman Musytari Fasa 2
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+Portal komuniti rasmi penduduk Taman Musytari Fasa 2 dengan kemudahan bayaran yuran, sembang komuniti, aktiviti terbaru, dan profil peribadi.
 
-  <h1>Built with AI Studio</h2>
+## Features
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+- Community Portal
+- Fee Payments
+- Community Chat
+- Latest Activities
+- Personal Profiles
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## Tech Stack
 
-</div>
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- Firebase (Firestore & Auth)
+- Express

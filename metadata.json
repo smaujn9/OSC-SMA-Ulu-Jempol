@@ -1,0 +1,8 @@
+{
+  "name": "Portal One Stop Centre SMAUJ",
+  "description": "Portal One Stop Centre Sekolah Menengah Agama Ulu Jempol",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

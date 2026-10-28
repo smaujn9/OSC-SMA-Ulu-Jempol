@@ -1,0 +1,6 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "database": "ai-studio-persatuantamanmu-8f601ecc-fcef-480e-8d05-d2038cfa5ea2"
+  }
+}
