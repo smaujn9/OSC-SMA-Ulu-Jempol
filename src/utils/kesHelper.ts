@@ -1,25 +1,15 @@
 import { CaseRecord } from '../types';
 import { logoBase64 } from './logoBase64';
 
-export function isAjkUser(userDoc?: any): boolean {
+export function isDisiplinAuthorized(userDoc?: any): boolean {
   if (!userDoc) return false;
   if (userDoc.isSuperAdmin) return true;
-  
-  const ajkRoles = [
-    'Admin Utama',
-    'Pengerusi',
-    'Naib Pengerusi',
-    'Setiausaha',
-    'Penolong Setiausaha',
-    'Naib Setiausaha',
-    'Bendahari',
-    'Penolong Bendahari',
-    'Ahli Jawatankuasa',
-    'Juru Audit',
-    'Audit'
-  ];
-  
-  return ajkRoles.includes(userDoc.role);
+  const role = (userDoc.role || '').toString().trim().toUpperCase();
+  return role === 'ADMIN UTAMA' || role === 'GURU';
+}
+
+export function isAjkUser(userDoc?: any): boolean {
+  return isDisiplinAuthorized(userDoc);
 }
 
 export function cleanSpeechTranscript(text: string): string {
@@ -61,7 +51,7 @@ export function processKeteranganFormat(text: string): string {
     if (!trimmed) return '';
 
     // Check if line is a Heading / Title (e.g. "1. Ringkasan Dan Kronologi Peristiwa")
-    const isHeading = /^(\d+[\.\)]|\b(Seksyen|Bahagian|Perkara)\b\s*\d+|[A-Z0-9\s]{3,}:|\b(Ringkasan|Kronologi|Impak|Kerugian|Tindakan|Cadangan|Latar Belakang|Rumusan)\b)/i.test(trimmed) && trimmed.length < 90;
+    const isHeading = /^(\d+[\.\)]|\b(Seksyen|Bahagian|Perkara)\b\s*\d+|[A-Z0-9\s]{3,}:|\b(Ringkasan|Kronologi|Impak|Kerugian|Tindakan|Cadangan|Latar Belakang|Rumusan|What|Who|When|Where|Why|How)\b)/i.test(trimmed) && trimmed.length < 90;
 
     if (isHeading) {
       // Capitalize Each Word (Title Case)
@@ -80,20 +70,81 @@ export function processKeteranganFormat(text: string): string {
   return processed.join('\n');
 }
 
-export const JENIS_KES_OPTIONS = [
-  'Pencerobohan / Pecah Rumah',
-  'Kecurian / Samun',
-  'Mengintai / Gangguan Skodeng / Stalking',
-  'Vandalisme / Kerosakan Harta Benda Awam & Persatuan',
-  'Gangguan Ketenteraman / Bunyi Bising Melampau',
-  'Sisa Pepejal / Pembuangan Sampah Haram',
-  'Haiwan Liar / Peliharaan Berbahaya / Mengganggu',
-  'Kemalangan / Keselamatan Jalan Raya Dalam Taman',
-  'Pertikaian / Perbalahan Fizikal Antara Jiran',
-  'Pencemaran Bau / Sisa Toksik / Longkang Tersumbat',
-  'Syak Aktiviti Jenayah / Dadah / Ancam Keselamatan',
-  'Kebakaran / Bencana Alam / Kecemasan Bangunan',
-  'Lain-lain Kes Serius'
+// 5W 1H Master Options for School Discipline
+export const KATEGORI_DISIPLIN_OPTIONS = [
+  'Ponteng (Sekolah / Kelas / Perhimpunan / Solat)',
+  'Merokok / Membawa atau Menghisap Vape / E-Cigarette',
+  'Tingkah Laku Jenayah (Pergaduhan / Mengugut / Memeras Ugut)',
+  'Buli Fizikal / Buli Lisan / Buli Siber',
+  'Kecurian / Mengambil Hak Milik Orang Lain',
+  'Vandalisme / Kerosakan Harta Benda Sekolah',
+  'Kurang Sopan / Biadab Terhadap Guru / Pengawas / Staf',
+  'Salah Guna Telefon Pintar / Gajet / Media Sosial',
+  'Tingkah Laku Lucah / Tidak Senonoh / Bahan Sumbang',
+  'Kekemasan Diri / Pakaian Seragam / Rambut',
+  'Membawa Barangan Larangan / Senjata Berbahaya',
+  'Ingkar Arahan / Enggan Mengikuti Peraturan Sekolah',
+  'Lain-lain Kesalahan Disiplin'
+];
+
+export const JENIS_KES_OPTIONS = KATEGORI_DISIPLIN_OPTIONS;
+
+export const TAHAP_KESALAHAN_OPTIONS: ('Ringan' | 'Sederhana' | 'Berat')[] = [
+  'Ringan',
+  'Sederhana',
+  'Berat'
+];
+
+export const SESI_WAKTU_OPTIONS = [
+  'Waktu PdP / Pembelajaran Dalam Kelas',
+  'Waktu Rehat / Kantin',
+  'Sebelum Sesi Persekolahan / Perhimpunan Pagi',
+  'Waktu Solat Zohor / Aktiviti Surau',
+  'Waktu Selepas Tamat Sekolah / Menunggu Bas',
+  'Waktu Aktiviti Kokurikulum / Sukan',
+  'Waktu Kelas Tambahan / Prep Petang / Malam',
+  'Kawasan Asrama (Bilik / Koridor / Dewan Makan)',
+  'Lain-lain Waktu'
+];
+
+export const LOKASI_DISIPLIN_OPTIONS = [
+  'Bilik Darjah / Kelas',
+  'Tandas Murid (Lelaki / Perempuan)',
+  'Kantin Sekolah',
+  'Padang / Gelanggang Sukan',
+  'Belakang Blok / Bangunan Sekolah',
+  'Surau / Musolla Sekolah',
+  'Dewan Sekolah / Dewan Terbuka',
+  'Pintu Pagar Sekolah / Pondok Pengawal',
+  'Makmal Sains / Komputer / Bengkel RBT',
+  'Perpustakaan / Pusat Sumber',
+  'Kawasan Asrama',
+  'Luar Kawasan Sekolah / Semasa Perjalanan',
+  'Lain-lain Lokasi'
+];
+
+export const PUNCA_DISIPLIN_OPTIONS = [
+  'Pengaruh Rakan Sebaya',
+  'Perselisihan Faham / Provokasi / Dendam',
+  'Tekanan Emosi / Kemarahan / Masalah Peribadi',
+  'Sengaja Mengingkari Peraturan / Sikap Acuh Tak Acuh',
+  'Masalah Kekeluargaan / Kurang Pemantauan',
+  'Ketagihan / Tabiat (Vape, Rokok, Telefon)',
+  'Kekurangan Pemahaman / Tidak Sengaja',
+  'Lain-lain Punca'
+];
+
+export const TINDAKAN_AWAL_OPTIONS = [
+  'Nasihat & Amaran Lisan',
+  'Amaran Bertulis & Catatan Buku Rekod Disiplin',
+  'Barang Rampasan Disita & Diserahkan ke Pejabat Disiplin',
+  'Dirujuk ke Guru Kaunselor / Bilik Bimbingan & Kaunseling',
+  'Dirujuk kepada Guru Disiplin / GPK Hal Ehwal Murid (HEM)',
+  'Panggilan / Surat Makluman Rasmi kepada Ibu Bapa / Penjaga',
+  'Perjanjian Berkelakuan Baik / Surat Aku Janji',
+  'Kerja Amal / Khidmat Masyarakat Sekolah',
+  'Gantung Persekolahan (Tindakan Tatatertib Kes Berat)',
+  'Laporan kepada Pegawai Perhubungan Sekolah (Polis PDRM / PPS)'
 ];
 
 export async function compressAndConvertToBase64(file: File, maxWidth = 1000, maxHeight = 1000, quality = 0.75): Promise<string> {
@@ -139,7 +190,7 @@ export async function compressAndConvertToBase64(file: File, maxWidth = 1000, ma
 export function printCaseReportPdf(caseRecord: CaseRecord) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    alert('Sila benarkan pop-up window di pelayar anda untuk mencetak Laporan Kes.');
+    alert('Sila benarkan pop-up window di pelayar anda untuk mencetak Laporan Kes Disiplin.');
     return;
   }
 
@@ -148,12 +199,21 @@ export function printCaseReportPdf(caseRecord: CaseRecord) {
   const hasSelesaiSection = Boolean(caseRecord.keteranganSelesai || caseRecord.buktiSelesaiUrl);
   const hasPage2Content = hasGambarBukti || hasKeteranganSiasatan || hasSelesaiSection;
 
+  const namaMurid = caseRecord.namaMurid || caseRecord.penerimaName || 'Tidak Dinyatakan';
+  const kelasMurid = caseRecord.kelasMurid || caseRecord.penerimaHouseNo || '-';
+  const tahap = caseRecord.tahapKesalahan || 'Sederhana';
+  const sesi = caseRecord.sesiKejadian || 'Waktu Persekolahan';
+  const lokasi = caseRecord.lokasiKejadian || 'Kawasan Sekolah';
+  const lokasiDet = caseRecord.lokasiPerincian ? ` (${caseRecord.lokasiPerincian})` : '';
+  const punca = caseRecord.puncaKejadian || 'Dalam Siasatan';
+  const tindakanAwal = caseRecord.tindakanAwalGuru || 'Nasihat dan Amaran Lisan';
+
   const html = `
     <!DOCTYPE html>
     <html lang="ms">
     <head>
       <meta charset="UTF-8">
-      <title>Laporan Kes Keselamatan - ${caseRecord.caseNo}</title>
+      <title>Laporan Kes Disiplin - ${caseRecord.caseNo}</title>
       <script src="https://cdn.tailwindcss.com"></script>
       <style>
         @page {
@@ -198,7 +258,7 @@ export function printCaseReportPdf(caseRecord: CaseRecord) {
     <body class="bg-slate-100 p-4 sm:p-6 text-slate-800">
       <div class="no-print mb-4 max-w-4xl mx-auto flex justify-between items-center bg-white p-3 rounded-xl shadow-md border border-slate-200">
         <div>
-          <h2 class="font-bold text-slate-800 text-xs">Dokumen Laporan Aduan / Kes Disiplin & Kebajikan SMAUJ (Format A4 Portrait)</h2>
+          <h2 class="font-bold text-slate-800 text-xs">Dokumen Laporan Rasmi Kes Disiplin Murid (Format 5W 1H)</h2>
           <p class="text-[10px] text-slate-500">No. Rujukan: ${caseRecord.caseNo}${hasPage2Content ? ' • (Laporan & Lampiran 2 Muka Surat)' : ' • (Laporan Ringkas 1 Muka Surat)'}</p>
         </div>
         <button onclick="window.print()" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer flex items-center gap-2">
@@ -217,13 +277,13 @@ export function printCaseReportPdf(caseRecord: CaseRecord) {
                 <img src="${logoBase64}" alt="Logo Sekolah" class="w-12 h-12 object-contain rounded-lg border border-slate-200 p-0.5 bg-white" />
                 <div>
                   <h1 class="font-black text-xs uppercase tracking-wide text-slate-900">SEKOLAH MENENGAH AGAMA ULU JEMPOL</h1>
-                  <p class="text-[9px] text-slate-600 font-medium">Kod Sekolah: NFT6001 | Portal Pengurusan Sekolah & PIBG</p>
+                  <p class="text-[9px] text-slate-600 font-medium">Kod Sekolah: NFT6001 | Unit Disiplin & Hal Ehwal Murid (HEM)</p>
                   <p class="text-[9px] text-slate-500">Ulu Jempol, 72200 Batu Kikir, Negeri Sembilan Darul Khusus</p>
                 </div>
               </div>
               <div class="text-right">
-                <span class="inline-block px-2 py-0.5 bg-slate-900 text-white font-black text-[9px] rounded uppercase tracking-wider mb-0.5">
-                  DOKUMEN RASMI SEKOLAH
+                <span class="inline-block px-2 py-0.5 bg-rose-900 text-white font-black text-[9px] rounded uppercase tracking-wider mb-0.5">
+                  REKOD DISIPLIN RASMI
                 </span>
                 <p class="font-mono text-slate-800 font-bold text-xs">No. Kes: ${caseRecord.caseNo}</p>
                 <p class="text-[9px] text-slate-500">Tarikh Daftar: ${new Date(caseRecord.createdAt).toLocaleDateString('ms-MY')}</p>
@@ -231,86 +291,211 @@ export function printCaseReportPdf(caseRecord: CaseRecord) {
             </div>
 
             <!-- Title -->
-            <div class="text-center my-3">
+            <div class="text-center my-2.5">
               <h2 class="text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-300 inline-block pb-0.5">
-                LAPORAN REKOD KES KOMUNITI & KESELAMATAN
+                BORANG LAPORAN KES SALAH LAKU & DISIPLIN MURID
               </h2>
-              <p class="text-[9px] text-slate-500 font-medium mt-0.5">
-                Borang Catatan Rasmi Ahli Jawatankuasa Untuk Rekod Simpanan Persatuan & Rujukan Pihak Berkuasa
+              <p class="text-[9px] text-slate-600 font-bold mt-0.5">
+                DOKUMENTASI SISTEMATIK BERDASARKAN PRINSIP 5W DAN 1H
               </p>
             </div>
 
-            <!-- Table Grid Details -->
-            <div class="grid grid-cols-2 gap-2 mb-3 bg-slate-50 p-3 border border-slate-200 rounded-lg text-[10px]">
+            <!-- Top Summary Box -->
+            <div class="grid grid-cols-2 gap-2 mb-3 bg-slate-50 p-2.5 border border-slate-200 rounded-lg text-[10px]">
               <div>
-                <span class="font-bold text-slate-400 uppercase block text-[9px]">Pengadu (AJK Persatuan)</span>
-                <p class="font-extrabold text-slate-800 text-[11px]">${caseRecord.pengaduName}</p>
-                <span class="inline-block px-1.5 py-0.2 bg-indigo-100 text-indigo-800 text-[8px] font-bold rounded mt-0.5">${caseRecord.pengaduRole}</span>
+                <span class="font-bold text-slate-400 uppercase block text-[8px]">Guru / Pegawai Pelapor</span>
+                <p class="font-extrabold text-slate-900 text-[11px]">${caseRecord.pengaduName}</p>
+                <span class="inline-block px-1.5 py-0.2 bg-indigo-100 text-indigo-900 text-[8px] font-bold rounded mt-0.5">
+                  ${caseRecord.pengaduRole}
+                </span>
               </div>
               <div>
-                <span class="font-bold text-slate-400 uppercase block text-[9px]">Penerima Kes / Pihak Terlibat</span>
-                <p class="font-extrabold text-slate-800 text-[11px]">${caseRecord.penerimaName || 'Tidak dinyatakan'}</p>
-                <p class="text-slate-600 font-semibold text-[9px]">No. Rumah: ${caseRecord.penerimaHouseNo || '-'}</p>
-              </div>
-              <div>
-                <span class="font-bold text-slate-400 uppercase block text-[9px]">Tarikh & Masa Kejadian</span>
-                <p class="font-bold text-slate-800">${caseRecord.tarikhKes} (Masa: ${caseRecord.masaKes})</p>
-              </div>
-              <div>
-                <span class="font-bold text-slate-400 uppercase block text-[9px]">Jenis Kes</span>
-                <p class="font-extrabold text-rose-700">${caseRecord.jenisKes}</p>
-              </div>
-              <div class="col-span-2 border-t border-slate-200 pt-1.5">
-                <span class="font-bold text-slate-400 uppercase block text-[9px]">Laporan Polis (PDRM)</span>
-                <p class="font-bold text-slate-800">
-                  ${caseRecord.isPoliceReport ? `YA - Dilaporkan di: ${caseRecord.balaiPolis || 'Balai Polis'}${caseRecord.noRepotPolis ? ` (No. Repot: ${caseRecord.noRepotPolis})` : ''}` : 'TIDAK / Dalam Tindakan Dalaman Persatuan'}
-                </p>
+                <span class="font-bold text-slate-400 uppercase block text-[8px]">Status Tindakan Kes</span>
+                <p class="font-extrabold text-rose-800 text-[11px]">${caseRecord.status || 'Dalam Siasatan'}</p>
+                <span class="inline-block px-1.5 py-0.2 bg-amber-100 text-amber-900 text-[8px] font-bold rounded mt-0.5">
+                  Tahap Kesalahan: ${tahap.toUpperCase()}
+                </span>
               </div>
             </div>
 
-            <!-- Keterangan Kes & Kronologi -->
-            <div class="mb-3">
-              <h3 class="font-black text-[10px] uppercase text-slate-800 tracking-wider mb-1 border-b border-slate-200 pb-0.5">
-                Keterangan & Kronologi Kes
-              </h3>
-              <div class="p-3 bg-white border border-slate-200 rounded-lg whitespace-pre-wrap leading-snug text-slate-700 text-[10px] font-normal min-h-[60px]">
-                ${caseRecord.keterangan}
+            <!-- ================= THE 5W 1H GRID ================= -->
+            <div class="space-y-2 mb-3">
+              
+              <!-- 1. WHAT (Apa Kesalahan) -->
+              <div class="border border-slate-200 rounded-lg p-2.5 bg-white">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-1 mb-1.5">
+                  <span class="font-black text-slate-900 text-[10px] tracking-wider uppercase">
+                    1. WHAT — APA KESALAHAN YANG BERLAKU?
+                  </span>
+                  <span class="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 text-[8px] font-extrabold rounded">
+                    Tahap: ${tahap}
+                  </span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-[10px]">
+                  <div class="col-span-1">
+                    <span class="text-slate-400 font-bold block text-[8px]">Kategori Kesalahan:</span>
+                    <p class="font-black text-rose-700">${caseRecord.jenisKes}</p>
+                  </div>
+                  <div class="col-span-2">
+                    <span class="text-slate-400 font-bold block text-[8px]">Perincian Perlakuan:</span>
+                    <p class="text-slate-700 font-medium">${caseRecord.whatPerincian || 'Sila rujuk keterangan kronologi kes di bahagian HOW.'}</p>
+                  </div>
+                </div>
               </div>
+
+              <!-- 2. WHO (Siapa Terlibat) -->
+              <div class="border border-slate-200 rounded-lg p-2.5 bg-white">
+                <div class="border-b border-slate-100 pb-1 mb-1.5">
+                  <span class="font-black text-slate-900 text-[10px] tracking-wider uppercase">
+                    2. WHO — SIAPA YANG TERLIBAT & SAKSI KEJADIAN?
+                  </span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-[10px]">
+                  <div>
+                    <span class="text-slate-400 font-bold block text-[8px]">Nama Murid (Terlibat):</span>
+                    <p class="font-extrabold text-slate-900 text-[11px]">${namaMurid}</p>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 font-bold block text-[8px]">Kelas / Tingkatan:</span>
+                    <p class="font-bold text-slate-800">${kelasMurid}</p>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 font-bold block text-[8px]">No. Kad Pengenalan / Murid:</span>
+                    <p class="font-mono text-slate-700">${caseRecord.noPelajar || '-'}</p>
+                  </div>
+                  <div class="col-span-2">
+                    <span class="text-slate-400 font-bold block text-[8px]">Saksi Kejadian (Guru / Murid):</span>
+                    <p class="text-slate-700 font-medium">${caseRecord.saksiKejadian || 'Tiada saksi khusus dinyatakan'}</p>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 font-bold block text-[8px]">Pihak Lain Terlibat / Mangsa:</span>
+                    <p class="text-slate-700 font-medium">${caseRecord.pihakTerlibatLain || 'Tiada'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. WHEN & 4. WHERE (Bila & Di Mana) -->
+              <div class="grid grid-cols-2 gap-2">
+                <!-- WHEN -->
+                <div class="border border-slate-200 rounded-lg p-2.5 bg-white">
+                  <div class="border-b border-slate-100 pb-1 mb-1.5">
+                    <span class="font-black text-slate-900 text-[10px] tracking-wider uppercase">
+                      3. WHEN — BILA BERLAKU?
+                    </span>
+                  </div>
+                  <div class="space-y-1 text-[10px]">
+                    <div>
+                      <span class="text-slate-400 font-bold block text-[8px]">Tarikh & Waktu Kejadian:</span>
+                      <p class="font-bold text-slate-800">${caseRecord.tarikhKes} (${caseRecord.masaKes})</p>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 font-bold block text-[8px]">Sesi / Waktu Sekolah:</span>
+                      <p class="text-slate-700 font-medium">${sesi}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- WHERE -->
+                <div class="border border-slate-200 rounded-lg p-2.5 bg-white">
+                  <div class="border-b border-slate-100 pb-1 mb-1.5">
+                    <span class="font-black text-slate-900 text-[10px] tracking-wider uppercase">
+                      4. WHERE — DI MANA BERLAKU?
+                    </span>
+                  </div>
+                  <div class="space-y-1 text-[10px]">
+                    <div>
+                      <span class="text-slate-400 font-bold block text-[8px]">Lokasi Utama:</span>
+                      <p class="font-bold text-slate-800">${lokasi}${lokasiDet}</p>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 font-bold block text-[8px]">Kawasan Kawalan:</span>
+                      <p class="text-slate-700 font-medium">${caseRecord.lokasiPerincian ? caseRecord.lokasiPerincian : 'Kawasan Premis SMAUJ'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 5. WHY (Mengapa Berlaku / Punca) -->
+              <div class="border border-slate-200 rounded-lg p-2.5 bg-white">
+                <div class="border-b border-slate-100 pb-1 mb-1.5">
+                  <span class="font-black text-slate-900 text-[10px] tracking-wider uppercase">
+                    5. WHY — MENGAPA BERLAKU / PUNCA KEJADIAN?
+                  </span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-[10px]">
+                  <div>
+                    <span class="text-slate-400 font-bold block text-[8px]">Faktor Utama:</span>
+                    <p class="font-bold text-slate-800">${punca}</p>
+                  </div>
+                  <div class="col-span-2">
+                    <span class="text-slate-400 font-bold block text-[8px]">Huraian Motif / Latar Belakang:</span>
+                    <p class="text-slate-700 font-medium">${caseRecord.sebabPerincian || 'Siasatan awal mendapati faktor di atas merupakan punca utama salah laku.'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 6. HOW (Bagaimana Berlaku & Tindakan) -->
+              <div class="border border-slate-200 rounded-lg p-2.5 bg-white">
+                <div class="border-b border-slate-100 pb-1 mb-1.5">
+                  <span class="font-black text-slate-900 text-[10px] tracking-wider uppercase">
+                    6. HOW — BAGAIMANA BERLAKU & TINDAKAN DIAMBIL?
+                  </span>
+                </div>
+                <div class="space-y-1.5 text-[10px]">
+                  <div>
+                    <span class="text-slate-400 font-bold block text-[8px]">Tindakan Awal Guru / Pelapor:</span>
+                    <p class="font-bold text-indigo-900 bg-indigo-50/50 p-1.5 rounded border border-indigo-100">${tindakanAwal}</p>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 font-bold block text-[8px]">Kronologi Penuh Kejadian & Cara Dikesan:</span>
+                    <div class="p-2 bg-slate-50 border border-slate-200 rounded whitespace-pre-wrap leading-snug text-slate-800 text-[9.5px]">
+                      ${caseRecord.kronologiKejadian || caseRecord.keterangan}
+                    </div>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 font-bold block text-[8px]">Rujukan Pegawai Perhubungan Sekolah / Polis (PDRM):</span>
+                    <p class="font-bold text-slate-800">
+                      ${caseRecord.isPoliceReport ? `YA - Dilaporkan di: ${caseRecord.balaiPolis || 'Balai Polis'}${caseRecord.noRepotPolis ? ` (No. Repot: ${caseRecord.noRepotPolis})` : ''}` : 'TIDAK (Tindakan Dalaman Disiplin & Bimbingan Kaunseling Sekolah)'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             <!-- Perakuan & Legal Statement -->
-            <div class="p-2.5 bg-amber-50/80 border border-amber-200 rounded-lg text-[9px] text-amber-900 leading-tight mb-3">
-              <p class="font-bold mb-0.5">PERAKUAN PENGESAHAN MAKLUMAT:</p>
+            <div class="p-2 bg-amber-50/80 border border-amber-200 rounded-lg text-[8.5px] text-amber-900 leading-tight mb-2.5">
+              <p class="font-bold mb-0.5">PERAKUAN GURU PELAPOR:</p>
               <p>
-                Semua maklumat dan keterangan yang dicatatkan di dalam laporan ini adalah benar. Sebarang penyataan palsu adalah tertakluk kepada tindakan di bawah <strong>Seksyen 182 Kanun Keseksaan (Akta 574)</strong> dan <strong>Seksyen 233 Akta Komunikasi dan Multimedia 1998 (Akta 588)</strong>.
+                Laporan ini direkodkan secara rasmi oleh Guru / Admin Utama yang bertugas tanpa sebarang niat prasangka, berpandukan Buku Peraturan Disiplin Murid Sekolah Menengah Agama Ulu Jempol dan Surat Pekeliling Ikhtisas Kementerian Pendidikan Malaysia.
               </p>
             </div>
           </div>
 
           <div>
             <!-- Signatures Row -->
-            <div class="grid grid-cols-2 gap-6 border-t border-slate-300 pt-3 mt-2">
+            <div class="grid grid-cols-2 gap-6 border-t border-slate-300 pt-2.5 mt-1">
               <div class="text-center">
-                <p class="text-[9px] font-bold text-slate-500 uppercase mb-1">Tandatangan Pengadu (AJK)</p>
-                <div class="h-16 border border-dashed border-slate-300 rounded flex items-center justify-center p-1 mb-1 bg-slate-50">
-                  ${caseRecord.pengaduSignatureUrl ? `<img src="${caseRecord.pengaduSignatureUrl}" alt="Tandatangan Pengadu" class="max-h-14 object-contain" />` : '<span class="text-slate-400 italic text-[9px]">Tiada Tandatangan</span>'}
+                <p class="text-[8.5px] font-bold text-slate-500 uppercase mb-1">Tandatangan Guru Pelapor</p>
+                <div class="h-14 border border-dashed border-slate-300 rounded flex items-center justify-center p-1 mb-1 bg-slate-50">
+                  ${caseRecord.pengaduSignatureUrl ? `<img src="${caseRecord.pengaduSignatureUrl}" alt="Tandatangan Pelapor" class="max-h-12 object-contain" />` : '<span class="text-slate-400 italic text-[8.5px]">Tiada Tandatangan</span>'}
                 </div>
-                <p class="font-bold text-slate-900 text-[10px] border-b border-slate-300 inline-block px-3 pb-0.5">${caseRecord.pengaduName}</p>
-                <p class="text-[9px] text-slate-500 font-medium">${caseRecord.pengaduRole}</p>
+                <p class="font-bold text-slate-900 text-[9.5px] border-b border-slate-300 inline-block px-3 pb-0.5">${caseRecord.pengaduName}</p>
+                <p class="text-[8.5px] text-slate-500 font-medium">${caseRecord.pengaduRole}</p>
               </div>
 
               <div class="text-center">
-                <p class="text-[9px] font-bold text-slate-500 uppercase mb-1">Tandatangan Penerima Kes / Pihak Terlibat</p>
-                <div class="h-16 border border-dashed border-slate-300 rounded flex items-center justify-center p-1 mb-1 bg-slate-50">
-                  ${caseRecord.penerimaSignatureUrl ? `<img src="${caseRecord.penerimaSignatureUrl}" alt="Tandatangan Penerima" class="max-h-14 object-contain" />` : '<span class="text-slate-400 italic text-[9px]">Tiada Tandatangan</span>'}
+                <p class="text-[8.5px] font-bold text-slate-500 uppercase mb-1">Tandatangan Murid / Saksi / Penerima</p>
+                <div class="h-14 border border-dashed border-slate-300 rounded flex items-center justify-center p-1 mb-1 bg-slate-50">
+                  ${caseRecord.penerimaSignatureUrl ? `<img src="${caseRecord.penerimaSignatureUrl}" alt="Tandatangan Penerima" class="max-h-12 object-contain" />` : '<span class="text-slate-400 italic text-[8.5px]">Tiada Tandatangan</span>'}
                 </div>
-                <p class="font-bold text-slate-900 text-[10px] border-b border-slate-300 inline-block px-3 pb-0.5">${caseRecord.penerimaName || 'Saksi / Penerima'}</p>
-                <p class="text-[9px] text-slate-500 font-medium">No. Rumah: ${caseRecord.penerimaHouseNo || '-'}</p>
+                <p class="font-bold text-slate-900 text-[9.5px] border-b border-slate-300 inline-block px-3 pb-0.5">${namaMurid}</p>
+                <p class="text-[8.5px] text-slate-500 font-medium">Kelas: ${kelasMurid}</p>
               </div>
             </div>
 
-            <div class="mt-4 text-center text-[8px] text-slate-400 border-t border-slate-100 pt-2">
-              Dokumen ini dijana secara digital oleh Portal Rasmi Sekolah Menengah Agama Ulu Jempol (SMAUJ) • Cetakan Rasmi
+            <div class="mt-2 text-center text-[7.5px] text-slate-400 border-t border-slate-100 pt-1.5">
+              Dokumen ini dijana secara digital oleh Portal Rasmi Sekolah Menengah Agama Ulu Jempol (SMAUJ) • Modul Pengurusan Disiplin Sekolah
             </div>
           </div>
         </div>
@@ -325,7 +510,7 @@ export function printCaseReportPdf(caseRecord: CaseRecord) {
 
             ${hasGambarBukti ? `
               <div class="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <span class="text-[10px] font-bold text-slate-600 uppercase block mb-1.5">Gambar Bukti / Kejadian Rasmi:</span>
+                <span class="text-[10px] font-bold text-slate-600 uppercase block mb-1.5">Gambar Barang Bukti / Tangkapan / Kejadian:</span>
                 <img src="${caseRecord.buktiGambarUrl}" alt="Bukti Gambar Kes" class="max-h-72 rounded border border-slate-300 object-contain mx-auto" />
               </div>
             ` : ''}
@@ -333,7 +518,7 @@ export function printCaseReportPdf(caseRecord: CaseRecord) {
             ${hasKeteranganSiasatan ? `
               <div class="mb-4">
                 <h3 class="font-black text-xs uppercase text-amber-800 tracking-wider mb-1.5 border-b border-amber-200 pb-1 flex items-center justify-between">
-                  <span>Keterangan Semasa Siasatan AJK</span>
+                  <span>Catatan Semasa Siasatan Guru Disiplin / HEM</span>
                   <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[8px] font-bold rounded">STATUS: DALAM SIASATAN</span>
                 </h3>
                 <div class="p-3 bg-amber-50/50 border border-amber-200 rounded-lg whitespace-pre-wrap leading-relaxed text-slate-800 text-[10px] font-normal">
@@ -345,7 +530,7 @@ export function printCaseReportPdf(caseRecord: CaseRecord) {
             ${hasSelesaiSection ? `
               <div class="mb-4">
                 <h3 class="font-black text-xs uppercase text-emerald-800 tracking-wider mb-1.5 border-b border-emerald-200 pb-1 flex items-center justify-between">
-                  <span>Keterangan & Bukti Selepas Selesai Siasatan</span>
+                  <span>Keterangan Penyelesaian & Tindakan Bimbingan Kaunseling</span>
                   <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[8px] font-bold rounded">STATUS: SELESAI</span>
                 </h3>
                 ${caseRecord.keteranganSelesai ? `
@@ -355,7 +540,7 @@ export function printCaseReportPdf(caseRecord: CaseRecord) {
                 ` : ''}
                 ${caseRecord.buktiSelesaiUrl ? `
                   <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                    <span class="text-[10px] font-bold text-slate-600 uppercase block mb-1.5">Gambar / Bukti Penyelesaian Kes:</span>
+                    <span class="text-[10px] font-bold text-slate-600 uppercase block mb-1.5">Gambar / Surat Aku Janji / Bukti Selesai:</span>
                     <img src="${caseRecord.buktiSelesaiUrl}" alt="Bukti Penyelesaian" class="max-h-72 rounded border border-slate-300 object-contain mx-auto" />
                   </div>
                 ` : ''}

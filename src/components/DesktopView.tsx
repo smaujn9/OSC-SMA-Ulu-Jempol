@@ -32,19 +32,14 @@ import AdminSection from './AdminSection';
 import AhliJawatankuasaSection from './AhliJawatankuasaSection';
 import { AssociationLogo } from './AssociationLogo';
 import DokumenSection from './DokumenSection';
-import { BaucarSection } from './BaucarSection';
 import SuratSection from './SuratSection';
 import MinitMesyuaratSection from './MinitMesyuaratSection';
 import NotisPanggilanSection from './NotisPanggilanSection';
 import KehadiranSection from './KehadiranSection';
 import KertasKerjaSection from './KertasKerjaSection';
-import PerbelanjaanProgramSection from './PerbelanjaanProgramSection';
-import ComplaintModal from './ComplaintModal';
 import BannerLaporkanKes from './BannerLaporkanKes';
 import BannerSumbangan from './BannerSumbangan';
-import QurbanAqiqahSection from './QurbanAqiqahSection';
-import AdminQurbanSection from './AdminQurbanSection';
-import { getAutoHijriQurbanSession, QurbanConfig } from '../utils/qurbanHelper';
+
 import KelulusanAhliSection from './KelulusanAhliSection';
 import BlogImageCarousel from './BlogImageCarousel';
 import { Heart } from 'lucide-react';
@@ -254,7 +249,6 @@ export default function DesktopView({
   const [activeBlog, setActiveBlog] = useState<BlogItem | null>(null);
   const guestAvatar = "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0663661842.firebasestorage.app/o/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3407.jpg?alt=media&token=429fd764-c3d9-44df-98c8-6307546354fc";
   const [showInstallModal, setShowInstallModal] = useState(false);
-  const [isComplaintOpen, setIsComplaintOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -429,79 +423,6 @@ export default function DesktopView({
   });
 
   const [tickedNotice, setTickedNotice] = useState<NotisPanggilan | null>(null);
-  const [sysQurbanConfig, setSysQurbanConfig] = useState<QurbanConfig | null>(null);
-  const [userHasQurbanRegs, setUserHasQurbanRegs] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (!db) return;
-    const unsub = onSnapshot(doc(db, 'system', 'qurbanConfig'), (docSnap) => {
-      if (docSnap.exists()) {
-        setSysQurbanConfig(docSnap.data() as QurbanConfig);
-      }
-    }, (err) => {
-      console.warn("Ralat muat qurbanConfig di DesktopView:", err);
-    });
-    return () => unsub();
-  }, [db]);
-
-  useEffect(() => {
-    const fUid = firebaseUser && !firebaseUser.isAnonymous && firebaseUser.uid !== 'guest_local' ? firebaseUser.uid : '';
-    const docUid = currentUserDoc?.uid && currentUserDoc.uid !== 'guest_local' ? currentUserDoc.uid : '';
-    const uEmail = (currentUserDoc?.email || firebaseUser?.email || '').trim().toLowerCase();
-    const uIc = (currentUserDoc?.icNumber || (currentUserDoc as any)?.noKadPengenalan || '').replace(/[^0-9]/g, '');
-
-    const matchesUser = (data: any) => {
-      if (!data || data.statusPendaftaran === 'Batal' || data.statusPendaftaran === 'DITAMATKAN') return false;
-      if (fUid && data.userUid === fUid) return true;
-      if (docUid && data.userUid === docUid) return true;
-      const regEmail1 = (data.userEmail || '').trim().toLowerCase();
-      const regEmail2 = (data.emel || '').trim().toLowerCase();
-      if (uEmail && (regEmail1 === uEmail || regEmail2 === uEmail)) return true;
-      const regIc = (data.noKadPengenalan || '').replace(/[^0-9]/g, '');
-      if (uIc && regIc && regIc === uIc) return true;
-      return false;
-    };
-
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('tmf2_qurban_registrations_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.some(matchesUser)) {
-            setUserHasQurbanRegs(true);
-          }
-        }
-      } catch (e) {}
-    }
-
-    if (!db || (!fUid && !docUid && !uEmail && !uIc)) {
-      return;
-    }
-    const q = query(collection(db, 'qurbanRegistrations'));
-    const unsub = onSnapshot(q, (snapshot) => {
-      let found = false;
-      const allActive: any[] = [];
-      snapshot.forEach((docSnap) => {
-        const d: any = docSnap.data();
-        const item = { ...d, id: d.id || docSnap.id };
-        if (item.statusPendaftaran !== 'Batal' && item.statusPendaftaran !== 'DITAMATKAN') {
-          allActive.push(item);
-        }
-        if (matchesUser(item)) {
-          found = true;
-        }
-      });
-      setUserHasQurbanRegs(found);
-      if (typeof window !== 'undefined' && (allActive.length > 0 || !snapshot.metadata.fromCache)) {
-        try {
-          localStorage.setItem('tmf2_qurban_registrations_cache', JSON.stringify(allActive));
-        } catch (e) {}
-      }
-    }, (err) => {
-      console.warn("Ralat semak qurbanRegistrations di DesktopView:", err);
-    });
-    return () => unsub();
-  }, [db, firebaseUser?.uid, firebaseUser?.email, currentUserDoc?.uid, currentUserDoc?.email, currentUserDoc?.icNumber]);
 
   useEffect(() => {
     if (!db) {
@@ -640,11 +561,8 @@ export default function DesktopView({
   const selectedCartPackages = packages.filter(p => cartPackageIds.includes(p.id));
   const subTotalCart = selectedCartPackages.reduce((sum, p) => sum + getPackagePrice(p), 0);
   const cartFpxFee = selectedCartPackages.length > 0 ? (yuranConfig.fpxCharge ?? 1.00) : 0.00;
-  const hasQurbanInCart = selectedCartPackages.some(p => p.realCategory === 'Qurban & Aqiqah' || p.id.startsWith('qurban-cart-'));
-  const hasOtherTambahanInCart = selectedCartPackages.some(p => p.category === 'Tambahan' && p.realCategory !== 'Qurban & Aqiqah' && !p.id.startsWith('qurban-cart-'));
-  const isFpxSurcharge = hasQurbanInCart && !hasOtherTambahanInCart
-    ? false
-    : (hasOtherTambahanInCart ? true : (yuranConfig.fpxSurchargeMode ?? true));
+  const hasOtherTambahanInCart = selectedCartPackages.some(p => p.category === 'Tambahan');
+  const isFpxSurcharge = hasOtherTambahanInCart ? true : (yuranConfig.fpxSurchargeMode ?? true);
   const cartTotalAmount = selectedCartPackages.length > 0
     ? isFpxSurcharge 
       ? subTotalCart + cartFpxFee 
@@ -1027,16 +945,6 @@ export default function DesktopView({
     ))
   );
 
-  const hasBaucarAccess = Boolean(
-    isAdminUtama ||
-    isGuru ||
-    (currentUserDoc && (
-      ['Admin Utama', 'ADMIN UTAMA', 'GURU', 'Guru', 'Bendahari', 'Pengerusi', 'Setiausaha'].includes(currentUserDoc.role) ||
-      currentUserDoc.isSuperAdmin === true ||
-      isAhliAktif
-    ))
-  );
-
   const hasKewanganAccess = Boolean(
     isAdminUtama ||
     isGuru ||
@@ -1085,12 +993,10 @@ export default function DesktopView({
       title: "Dokumen & Sumber",
       items: [
         { id: 'dokumen', label: 'Dokumen Persatuan', icon: Folder, locked: !hasDokumenAccess },
-        { id: 'baucar', label: 'Baucar Bayaran', icon: FileCheck, locked: !hasBaucarAccess },
         { id: 'surat', label: 'Jana Surat', icon: FileText, locked: !hasSuratAccess },
         { id: 'minit-mesyuarat', label: 'Minit Mesyuarat', icon: FileCheck, locked: !hasMinitAccess },
         { id: 'notis-panggilan', label: 'Notis Panggilan', icon: Bell, locked: !hasNotisPanggilanAccess },
         { id: 'kertas-kerja', label: 'Kertas Kerja', icon: FileSpreadsheet, locked: !hasKertasKerjaAccess },
-        { id: 'perbelanjaan-program', label: 'Perbelanjaan Program', icon: Wallet, locked: !isAhliAktif },
       ]
     }
   ];
@@ -2351,17 +2257,6 @@ export default function DesktopView({
                           </span>
                         </button>
 
-                        <button
-                          onClick={() => setCurrentView('perbelanjaan-program')}
-                          className="bg-white rounded-xl p-4 flex flex-col items-center justify-center text-center border border-amber-100 hover:border-amber-300 hover:shadow-xs transition-all cursor-pointer group relative"
-                        >
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2.5 bg-amber-50 text-amber-600 group-hover:scale-105 transition-transform">
-                            <Wallet size={18} />
-                          </div>
-                          <span className="text-[10px] font-bold text-gray-700 leading-tight group-hover:text-amber-600">
-                            Perbelanjaan Program
-                          </span>
-                        </button>
 
                         <button
                           onClick={() => {
@@ -2495,68 +2390,12 @@ export default function DesktopView({
                       );
                     })()}
 
-                    {/* Banner Aduan */}
-                    <div 
-                      onClick={() => setIsComplaintOpen(true)}
-                      className="relative bg-gradient-to-br from-rose-600 to-amber-600 rounded-2xl p-5 overflow-hidden shadow-lg shadow-rose-900/10 cursor-pointer group border border-rose-500/30 transition-transform hover:-translate-y-0.5"
-                    >
-                      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <MessageSquare size={80} className="text-white transform rotate-12" />
-                      </div>
-                      <div className="relative z-10 flex flex-col justify-between h-full">
-                        <div className="space-y-1.5 text-white pr-10">
-                          <h3 className="font-extrabold text-lg flex items-center gap-2">
-                            Aduan & Maklum Balas <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                          </h3>
-                          <p className="text-xs font-medium text-rose-100 leading-relaxed">
-                            Sampaikan sebarang masalah, aduan kerosakan, atau cadangan penambahbaikan terus kepada pihak jawatankuasa.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
                     {/* Banner Sumbangan */}
                     <BannerSumbangan onClick={() => setCurrentView('sumbangan')} isMobile={false} />
 
-                    {/* Banner Laporkan Kes (AJK) */}
+                    {/* Banner Laporkan Kes Disiplin (Admin Utama & Guru) */}
                     <BannerLaporkanKes isMobile={false} />
 
-                    {/* Banner Pendaftaran Qurban & Aqiqah */}
-                    {(() => {
-                      const visibility = sysQurbanConfig?.bannerVisibility || (userHasQurbanRegs ? 'registered' : 'hide');
-                      if (visibility === 'hide' && !userHasQurbanRegs) return null;
-                      if (visibility === 'registered' && !userHasQurbanRegs) return null;
-
-                      const qurbanSess = getAutoHijriQurbanSession(sysQurbanConfig?.sessionYearOverride);
-                      return (
-                        <div 
-                          onClick={() => setCurrentView('qurban_register')}
-                          className="relative bg-gradient-to-br from-emerald-800 via-teal-800 to-emerald-900 rounded-2xl p-5 overflow-hidden shadow-lg shadow-emerald-950/20 cursor-pointer group border border-emerald-600/40 transition-transform hover:-translate-y-0.5"
-                        >
-                          <div className="absolute top-0 right-0 p-3 opacity-15 group-hover:opacity-25 transition-opacity">
-                            <Heart size={90} className="text-emerald-300 transform rotate-12" />
-                          </div>
-                          <div className="relative z-10 flex flex-col justify-between h-full space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-xs">
-                                Sesi {qurbanSess.hijriYear}
-                              </span>
-                              <span className="bg-emerald-700/60 text-emerald-100 text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
-                                Pendaftaran Dibuka
-                              </span>
-                            </div>
-                            <div className="space-y-1 text-white pr-8">
-                              <h3 className="font-extrabold text-lg flex items-center gap-2 tracking-tight text-amber-300">
-                                Pendaftaran Qurban & Aqiqah <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform text-white" />
-                              </h3>
-                              <p className="text-xs font-medium text-emerald-100 leading-relaxed">
-                                Sesi {qurbanSess.fullLabel} &bull; Mendaftar bahagian/ekor lembu atau kambing dengan kaedah bayaran penuh atau ansuran bulanan.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
 
                     {/* Aktiviti Terkini feed */}
                     <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs space-y-4">
@@ -3221,40 +3060,8 @@ export default function DesktopView({
           ) : currentView === 'admin' ? (
             hasAdminAccess ? (
               <div className="bg-slate-55 p-4 rounded-2xl border border-gray-100 shadow-xs">
-                <AdminSection isMobile={false} onNavigateToUrusQurban={() => setCurrentView('urus_qurban')} />
+                <AdminSection isMobile={false} />
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center px-4">
-                <Shield className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <h2 className="text-lg font-extrabold text-slate-900 mb-2">Akses Ditolak</h2>
-                <p className="text-sm text-slate-500">Anda tidak mempunyai kebenaran untuk melihat halaman ini.</p>
-              </div>
-            )
-          ) : currentView === 'qurban_register' ? (
-            <QurbanAqiqahSection
-              onBack={() => setCurrentView('utamanya')}
-              onNavigateToYuran={() => setCurrentView('yuran')}
-              onNavigateToCart={() => {
-                setShowCartDropdown(true);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onAddToCart={(cartItem) => {
-                if (setPackages) {
-                  setPackages(prev => {
-                    if (prev.some(p => p.id === cartItem.id)) return prev;
-                    return [...prev, cartItem];
-                  });
-                }
-                if (setCartPackageIds) {
-                  setCartPackageIds(prev => Array.from(new Set([...prev, cartItem.id])));
-                }
-              }}
-            />
-          ) : currentView === 'urus_qurban' ? (
-            hasAdminAccess ? (
-              <AdminQurbanSection
-                onBack={() => setCurrentView('admin')}
-              />
             ) : (
               <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center px-4">
                 <Shield className="w-16 h-16 text-slate-300 mx-auto mb-4" />
@@ -3439,18 +3246,6 @@ export default function DesktopView({
                 <p className="text-sm text-slate-500">Anda tidak mempunyai kebenaran untuk melihat halaman ini.</p>
               </div>
             )
-          ) : currentView === 'baucar' ? (
-            hasBaucarAccess ? (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-xs">
-                <BaucarSection isMobile={false} onBack={() => setCurrentView('dashboard')} />
-              </div>
-            ) : (
-              <div className="p-12 text-center bg-white rounded-xl shadow-xs border border-gray-100 mt-12 max-w-md mx-auto">
-                <Shield className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <h2 className="text-lg font-extrabold text-slate-900 mb-2">Akses Ditolak</h2>
-                <p className="text-sm text-slate-500">Halaman ini hanya boleh diakses oleh peranan Admin Utama, Bendahari, Pengerusi, dan Penerima Baucar yang berkaitan sahaja.</p>
-              </div>
-            )
           ) : currentView === 'kertas-kerja' ? (
             !isGoogleSignedIn ? (
               <div className="flex flex-col items-center justify-center text-center p-12 bg-white rounded-2xl border border-slate-100 shadow-3xs max-w-lg mx-auto mt-12 space-y-4">
@@ -3488,40 +3283,6 @@ export default function DesktopView({
                 <h2 className="text-lg font-extrabold text-slate-900 mb-2">Akses Ditolak</h2>
                 <p className="text-sm text-slate-500">Halaman Kertas Kerja ini hanya boleh diakses oleh peranan Admin Utama, Pengerusi, Naib Pengerusi, Setiausaha, Naib Setiausaha, dan Bendahari sahaja.</p>
               </div>
-            )
-          ) : currentView === 'perbelanjaan-program' ? (
-            !isGoogleSignedIn ? (
-              <div className="flex flex-col items-center justify-center text-center p-12 bg-white rounded-2xl border border-slate-100 shadow-3xs max-w-lg mx-auto mt-12 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner">
-                  <LogIn className="w-7 h-7" />
-                </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-lg font-black text-slate-950 uppercase tracking-tight">LOG MASUK DIPERLUKAN</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-                    Sila log masuk menggunakan akaun Google anda terlebih dahulu untuk mengakses halaman Perbelanjaan Program.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await loginWithGoogle();
-                    } catch (err) {
-                      console.error("Gagal log masuk:", err);
-                    }
-                  }}
-                  className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <LogIn size={14} className="stroke-[2.5]" />
-                  <span>Log Masuk dengan Google</span>
-                </button>
-              </div>
-            ) : isAhliAktif ? (
-              <div className="bg-slate-50/20 p-2 sm:p-4 rounded-2xl">
-                <PerbelanjaanProgramSection isMobile={false} onBack={() => setCurrentView('dashboard')} />
-              </div>
-            ) : (
-              aksesDitolakCard
             )
           ) : currentView === 'dokumen' ? (
             hasDokumenAccess ? (
@@ -4233,8 +3994,6 @@ export default function DesktopView({
           </div>
         </div>
       )}
-
-      <ComplaintModal isOpen={isComplaintOpen} onClose={() => setIsComplaintOpen(false)} />
 
       <ConfirmLogoutModal
         isOpen={showLogoutConfirmModal}

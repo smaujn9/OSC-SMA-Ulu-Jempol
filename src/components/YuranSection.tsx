@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { FeeItem, ImageFeePackage, QurbanRegistration } from '../types';
-import { printQurbanRegistrationPdf, QurbanConfig } from '../utils/qurbanHelper';
+import { FeeItem, ImageFeePackage } from '../types';
 import { 
   Check, CreditCard, ShieldCheck, Calendar, Info, Heart, Users, 
   ShoppingCart, ArrowRight, X, Award, User, HelpCircle, AlertCircle,
@@ -159,176 +158,6 @@ export default function YuranSection({
     return () => unsub();
   }, [db, firebaseUser]);
 
-  const matchesCurrentUserQurban = React.useCallback((data: QurbanRegistration) => {
-    if (data.statusPendaftaran === 'Batal') return false;
-    const fUid = firebaseUser && !firebaseUser.isAnonymous && firebaseUser.uid !== 'guest_local' ? firebaseUser.uid : '';
-    const cUid = currentUserDoc?.uid && currentUserDoc.uid !== 'guest_local' ? currentUserDoc.uid : '';
-    if (fUid && data.userUid === fUid) return true;
-    if (cUid && data.userUid === cUid) return true;
-    const userEmailNorm = (firebaseUser?.email || currentUserDoc?.email || '').toLowerCase().trim();
-    const regEmailNorm = (data.userEmail || data.emel || '').toLowerCase().trim();
-    if (userEmailNorm && regEmailNorm && userEmailNorm === regEmailNorm) return true;
-    const userIcNorm = (currentUserDoc?.icNumber || '').replace(/[^0-9]/g, '');
-    const regIcNorm = (data.noIC || '').replace(/[^0-9]/g, '');
-    if (userIcNorm && regIcNorm && userIcNorm.length >= 6 && userIcNorm === regIcNorm) return true;
-    return false;
-  }, [firebaseUser, currentUserDoc]);
-
-  const [userQurbanRegs, setUserQurbanRegs] = React.useState<QurbanRegistration[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('tmf2_qurban_registrations_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached) as QurbanRegistration[];
-          if (Array.isArray(parsed)) {
-            return parsed.filter(r => r.statusPendaftaran !== 'Batal');
-          }
-        }
-      } catch (e) {}
-    }
-    return [];
-  });
-
-  React.useEffect(() => {
-    if (!db) return;
-    const hasIdentity = (firebaseUser && firebaseUser.uid !== 'guest_local') || (currentUserDoc && (currentUserDoc.uid || currentUserDoc.email));
-    if (!hasIdentity) return;
-
-    // Immediately filter any cached registrations for the current user
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('tmf2_qurban_registrations_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached) as QurbanRegistration[];
-          if (Array.isArray(parsed)) {
-            setUserQurbanRegs(parsed.filter(matchesCurrentUserQurban));
-          }
-        }
-      } catch (e) {}
-    }
-
-    const q = collection(db, 'qurbanRegistrations');
-    const unsub = onSnapshot(q, (snapshot) => {
-      const allActive: QurbanRegistration[] = [];
-      const list: QurbanRegistration[] = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data() as QurbanRegistration;
-        const fullReg = { ...data, id: data.id || docSnap.id };
-        if (fullReg.statusPendaftaran !== 'Batal' && fullReg.statusPendaftaran !== 'DITAMATKAN') {
-          allActive.push(fullReg);
-        }
-        if (matchesCurrentUserQurban(fullReg)) {
-          list.push(fullReg);
-        }
-      });
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('tmf2_qurban_registrations_cache', JSON.stringify(allActive));
-        } catch (e) {}
-      }
-      setUserQurbanRegs(list);
-    }, (error) => {
-      console.warn("Ralat akses qurbanRegistrations di YuranSection:", error);
-    });
-    return () => unsub();
-  }, [db, firebaseUser, currentUserDoc, matchesCurrentUserQurban]);
-
-  // Auto-remove any Qurban deposit or paid installments from cart
-  React.useEffect(() => {
-    if (userQurbanRegs.length > 0) {
-      userQurbanRegs.forEach(reg => {
-        if (reg.installmentPayments) {
-          reg.installmentPayments.forEach(inst => {
-            const isDeposit = inst.monthIndex === 1;
-            const isCash = reg.caraPembayaran === 'Tunai' || inst.paymentMethod === 'Tunai';
-            const isPaid = inst.status === 'Lulus' || 
-              (reg.monthsPaid != null && inst.monthIndex <= reg.monthsPaid) || 
-              (isDeposit && (reg.paymentStatus === 'Deposit Dibayar' || reg.paymentStatus === 'Selesai'));
-            const cartItemId = `qurban-cart-${reg.id}-m${inst.monthIndex}`;
-            if (isPaid || (isDeposit && isCash)) {
-              setCartPackageIds(prev => prev.includes(cartItemId) ? prev.filter(id => id !== cartItemId) : prev);
-            }
-          });
-        }
-      });
-    }
-  }, [userQurbanRegs]);
-
-  const [sysQurbanConfig, setSysQurbanConfig] = React.useState<QurbanConfig | null>(null);
-
-  React.useEffect(() => {
-    if (!db) return;
-    const unsub = onSnapshot(doc(db, 'system', 'qurbanConfig'), (docSnap) => {
-      if (docSnap.exists()) {
-        setSysQurbanConfig(docSnap.data() as QurbanConfig);
-      }
-    }, (error) => {
-      console.warn("Ralat akses system/qurbanConfig di YuranSection:", error);
-    });
-    return () => unsub();
-  }, [db]);
-
-  // Auto-sync missing 'Lulus' Qurban installment transactions to kewanganTransactions
-  React.useEffect(() => {
-    if (!db || !firebaseUser || firebaseUser.uid === 'guest_local' || transactions.length === 0) return;
-    const q = collection(db, 'qurbanRegistrations');
-    const unsub = onSnapshot(q, (snapshot) => {
-      snapshot.forEach(async (docSnap) => {
-        const reg = docSnap.data() as QurbanRegistration;
-        if (reg.installmentPayments && reg.installmentPayments.length > 0) {
-          for (const inst of reg.installmentPayments) {
-            if (inst.status === 'Lulus') {
-              const expectedCartId = `qurban-cart-${docSnap.id}-m${inst.monthIndex}`;
-              const exists = transactions.some(t => 
-                t.paidPackageIds?.includes(expectedCartId) || 
-                t.id.includes(`qurban-${docSnap.id}-m${inst.monthIndex}`) ||
-                (t.notes && t.notes.includes(docSnap.id) && t.description?.includes(inst.monthName))
-              );
-              if (!exists) {
-                const dateStr = inst.paidAt ? inst.paidAt.split('T')[0] : new Date().toISOString().split('T')[0];
-                const timeStr = "12:00";
-                const txnId = `TXN-QURBAN-SYNC-${docSnap.id}-m${inst.monthIndex}`;
-                const vchId = `VCH-QURBAN-${docSnap.id.substring(0, 6)}-m${inst.monthIndex}`;
-                const syncTxn: KewanganTransaction = {
-                  id: txnId,
-                  voucherNo: vchId,
-                  date: dateStr,
-                  time: timeStr,
-                  accountDebit: inst.paymentMethod === 'Tunai' ? "Tunai" : (inst.paymentMethod === 'Manual' ? "Tunai" : "Bank"),
-                  accountCredit: "Qurban Aqiqah",
-                  amount: inst.amount,
-                  description: `Bayaran ${inst.paymentMethod || 'Ansuran'} ${reg.jenisPenyertaan} (${reg.pakejPilihan}) - ${inst.monthName} oleh ${reg.namaPenuh || 'Peserta'}`,
-                  category: "Qurban Aqiqah",
-                  recordedBy: "Sistem (Auto-Sync)",
-                  approvalStatus: "Approved",
-                  approvedDate: dateStr,
-                  approvedBy: "Sistem",
-                  notes: `Bayaran ansuran Qurban & Aqiqah (${inst.monthName}) berstatus Lulus (Rujukan Reg ${docSnap.id}).`,
-                  memberEmail: reg.userEmail || "",
-                  paidPackageIds: [expectedCartId],
-                  sessionYear: detectActiveSessionYear() || "2026",
-                  qurbanSession: reg.sessionYear,
-                  auditTrail: [
-                    { 
-                      time: `${dateStr} ${timeStr}`, 
-                      user: "Sistem", 
-                      action: `Merekod ansuran Qurban yang disahkan (${inst.monthName})` 
-                    }
-                  ]
-                };
-                await setDoc(doc(db, 'kewanganTransactions', txnId), cleanUndefined(syncTxn)).catch(err => {
-                  console.warn("Auto sync Qurban txn error:", err);
-                });
-              }
-            }
-          }
-        }
-      });
-    }, (error) => {
-      console.warn("Ralat sync qurbanRegistrations:", error);
-    });
-    return () => unsub();
-  }, [db, firebaseUser, transactions]);
 
   const userEmail = currentUserDoc?.email || firebaseUser?.email || '';
   const userPendingTxns = React.useMemo(() => {
@@ -368,42 +197,12 @@ export default function YuranSection({
   const [selectedMemberId, setSelectedMemberId] = React.useState<string>("");
   const [selectedManualPackageIds, setSelectedManualPackageIds] = React.useState<string[]>([]);
   const [manualTambahanAmounts, setManualTambahanAmounts] = React.useState<Record<string, number>>({});
-  const [selectedMemberQurbanRegs, setSelectedMemberQurbanRegs] = React.useState<QurbanRegistration[]>([]);
-  const [selectedManualQurbanMonths, setSelectedManualQurbanMonths] = React.useState<{ [regId: string]: number[] }>({});
   const [manualDebitAccount, setManualDebitAccount] = React.useState<'Tunai' | 'Bank'>('Tunai');
   const [proofFile, setProofFile] = React.useState<File | null>(null);
   const [proofPreview, setProofPreview] = React.useState<string | null>(null);
   const [uploadingManual, setUploadingManual] = React.useState<boolean>(false);
   const [adminManualError, setAdminManualError] = React.useState<string | null>(null);
   const [adminManualSuccess, setAdminManualSuccess] = React.useState<boolean>(false);
-
-  // Auto-fetch Qurban Registrations for selected member in Admin Manual Modal
-  React.useEffect(() => {
-    if (!db || !selectedMemberId) {
-      setSelectedMemberQurbanRegs([]);
-      setSelectedManualQurbanMonths({});
-      return;
-    }
-    const selectedDoc = allUsers?.find(u => u.uid === selectedMemberId);
-    const selectedEmail = selectedDoc?.email || '';
-
-    const q = collection(db, 'qurbanRegistrations');
-    const unsub = onSnapshot(q, (snapshot) => {
-      const list: QurbanRegistration[] = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data() as QurbanRegistration;
-        if (data.userUid === selectedMemberId || (selectedEmail && data.userEmail && data.userEmail.toLowerCase() === selectedEmail.toLowerCase())) {
-          if (data.statusPendaftaran !== 'Batal' && data.statusPendaftaran !== 'DITAMATKAN' && data.statusPendaftaran !== 'DISEMAK') {
-            list.push({ id: docSnap.id, ...data });
-          }
-        }
-      });
-      setSelectedMemberQurbanRegs(list);
-    }, (error) => {
-      console.warn("Ralat akses qurbanRegistrations untuk ahli terpilih:", error);
-    });
-    return () => unsub();
-  }, [db, selectedMemberId, allUsers]);
 
   const isUserAdminOrTreasurer = currentUserDoc?.role === 'Admin Utama' || currentUserDoc?.role === 'ADMIN UTAMA' || currentUserDoc?.isSuperAdmin === true || currentUserDoc?.email?.toLowerCase() === 'g-59129199@moe-dl.edu.my' || currentUserDoc?.role === 'Bendahari';
   const selectedMemberDoc = allUsers?.find(u => u.uid === selectedMemberId);
@@ -432,8 +231,6 @@ export default function YuranSection({
     setSelectedMemberId("");
     setSelectedManualPackageIds([]);
     setManualTambahanAmounts({});
-    setSelectedMemberQurbanRegs([]);
-    setSelectedManualQurbanMonths({});
     setManualDebitAccount('Tunai');
     setProofFile(null);
     setProofPreview(null);
@@ -467,27 +264,13 @@ export default function YuranSection({
     });
   };
 
-  const handleToggleManualQurbanMonth = (regId: string, monthIndex: number) => {
-    setSelectedManualQurbanMonths(prev => {
-      const currentList = prev[regId] || [];
-      const isSelected = currentList.includes(monthIndex);
-      if (isSelected) {
-        const updated = currentList.filter(m => m !== monthIndex);
-        return { ...prev, [regId]: updated };
-      } else {
-        return { ...prev, [regId]: [...currentList, monthIndex] };
-      }
-    });
-  };
-
   const handleSubmitManualPayment = async () => {
     if (!selectedMemberId) {
       setAdminManualError("Sila pilih ahli terlebih dahulu.");
       return;
     }
-    const hasQurbanMonthsSelected = Object.values(selectedManualQurbanMonths).some((arr: any) => Array.isArray(arr) && arr.length > 0);
-    if (selectedManualPackageIds.length === 0 && !hasQurbanMonthsSelected) {
-      setAdminManualError("Sila pilih sekurang-kurangnya satu yuran atau ansuran Qurban.");
+    if (selectedManualPackageIds.length === 0) {
+      setAdminManualError("Sila pilih sekurang-kurangnya satu yuran.");
       return;
     }
 
@@ -688,74 +471,7 @@ export default function YuranSection({
         }
       }
 
-      // 4. Merekod bayaran manual bagi ansuran Qurban & Aqiqah yang dipilih
-      if (hasQurbanMonthsSelected) {
-        for (const reg of selectedMemberQurbanRegs) {
-          const selectedMonths = selectedManualQurbanMonths[reg.id] || [];
-          if (selectedMonths.length === 0) continue;
 
-          const insts = reg.installmentPayments ? [...reg.installmentPayments] : [];
-
-          for (const mIdx of selectedMonths) {
-            const inst = insts.find(i => i.monthIndex === mIdx);
-            const amountToRecord = inst ? inst.amount : (reg.opsiBayaran === 'Ansuran' ? reg.depositAmount : reg.totalAmount);
-            const monthLabel = inst ? inst.monthName : `Bulan ${mIdx}`;
-
-            const nextIdNum = transactions.length + 1;
-            const txnId = `TXN-QURBAN-M-${reg.id}-m${mIdx}-${Date.now()}`;
-            const vchId = `VCH-2026-M-${String(nextIdNum).padStart(4, '0')}`;
-
-            const newTxn: KewanganTransaction = {
-              id: txnId,
-              voucherNo: vchId,
-              date: dateStr,
-              time: timeStr,
-              accountDebit: manualDebitAccount,
-              accountCredit: "Qurban Aqiqah",
-              amount: amountToRecord,
-              description: `Bayaran ${manualDebitAccount} Manual ${reg.jenisPenyertaan} (${reg.pakejPilihan}) - ${monthLabel} oleh ${selectedMemberDoc?.displayName || selectedMemberDoc?.nickname || 'Ahli'}`,
-              category: "Qurban Aqiqah",
-              recordedBy: `${currentUserDoc?.displayName || currentUserDoc?.nickname || 'Admin'} (Manual)`,
-              approvalStatus: "Approved",
-              approvedDate: dateStr,
-              approvedBy: currentUserDoc?.displayName || currentUserDoc?.nickname || 'Admin',
-              receiptAttachment: downloadUrl,
-              notes: `Bayaran ansuran Qurban & Aqiqah secara manual (${manualDebitAccount}) yang didaftarkan oleh Admin Utama / Bendahari.`,
-              memberEmail: targetMemberEmail || reg.userEmail || "",
-              paidPackageIds: [`qurban-cart-${reg.id}-m${mIdx}`],
-              auditTrail: [
-                { 
-                  time: `${dateStr} ${timeStr}`, 
-                  user: currentUserDoc?.displayName || currentUserDoc?.nickname || 'Admin', 
-                  action: `Merekod yuran manual Qurban (${monthLabel}) secara ${manualDebitAccount} (Lulus)` 
-                }
-              ]
-            };
-
-            await setDoc(doc(db, 'kewanganTransactions', txnId), cleanUndefined(newTxn));
-
-            // Kemaskini status installment tempatan
-            if (insts[mIdx - 1]) {
-              insts[mIdx - 1].status = 'Lulus';
-              insts[mIdx - 1].paidAt = dateStr;
-              insts[mIdx - 1].paymentMethod = 'Manual';
-            }
-          }
-
-          // Kemaskini dokumen qurbanRegistrations di Firestore
-          const newMonthsPaid = insts.length > 0 ? insts.filter(i => i.status === 'Lulus').length : 1;
-          const totMonths = reg.totalMonths || 1;
-          const pStatus = newMonthsPaid >= totMonths ? 'Selesai' : (newMonthsPaid > 0 ? 'Ansuran Berjalan' : 'Deposit Dibayar');
-
-          await updateDoc(doc(db, 'qurbanRegistrations', reg.id), {
-            installmentPayments: insts,
-            monthsPaid: newMonthsPaid,
-            paymentStatus: pStatus,
-            statusPendaftaran: 'Disahkan',
-            updatedAt: new Date().toISOString()
-          });
-        }
-      }
 
       // Hantar Notifikasi ke Telegram bagi Bayaran Manual oleh Admin/Bendahari
       try {
@@ -1248,220 +964,7 @@ export default function YuranSection({
     setToastMessage("Pakej yuran berjaya diselaraskan!");
   };
 
-  const renderUserQurbanSection = () => {
-    const activeUserRegs = userQurbanRegs.filter(matchesCurrentUserQurban);
-    if (activeUserRegs.length === 0) return null;
 
-    return (
-      <div className="bg-white rounded-[24px] p-5 border border-emerald-100 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-              <Heart size={18} />
-            </div>
-            <div>
-              <h3 className="font-black text-slate-900 text-sm">Pendaftaran Qurban & Aqiqah Anda</h3>
-              <p className="text-[11px] text-slate-500 font-medium">Rekod pendaftaran, jadual ansuran & muat turun borang rasmi.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {activeUserRegs.map(reg => {
-            const totalMonthsCount = reg.tempohAnsuranBulan || reg.totalMonths || 3;
-            const monthlyAmt = reg.monthlyAmount || Math.ceil(reg.totalAmount / totalMonthsCount);
-            const installmentsToRender = (reg.installmentPayments && reg.installmentPayments.length > 0)
-              ? reg.installmentPayments
-              : (reg.opsiBayaran === 'Ansuran'
-                  ? Array.from({ length: totalMonthsCount }).map((_, i) => ({
-                      monthIndex: i + 1,
-                      monthName: i === 0 ? 'Bulan 1 (Deposit)' : `Bulan ${i + 1}`,
-                      amount: monthlyAmt,
-                      status: (i === 0 && (reg.paymentStatus === 'Deposit Dibayar' || reg.paymentStatus === 'Selesai' || (reg.monthsPaid || 0) >= 1)) ? ('Lulus' as const) : ('Belum Bayar' as const),
-                      paymentMethod: (reg.caraPembayaran === 'Tunai' ? 'Tunai' : 'FPX') as 'Tunai' | 'FPX' | 'Manual'
-                    }))
-                  : []);
-
-            return (
-            <div key={reg.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-3">
-              <div className="flex flex-wrap justify-between items-start gap-2 border-b border-slate-200/60 pb-2">
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                      reg.statusPendaftaran === 'Disahkan' ? 'bg-emerald-100 text-emerald-800' :
-                      reg.statusPendaftaran === 'DISEMAK' ? 'bg-amber-100 text-amber-800 animate-pulse' :
-                      reg.statusPendaftaran === 'DITAMATKAN' ? 'bg-rose-100 text-rose-800' :
-                      'bg-amber-100 text-amber-800'
-                    }`}>
-                      {reg.statusPendaftaran}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
-                      {reg.sessionYear}
-                    </span>
-                  </div>
-                  <h4 className="text-xs font-black text-slate-900 mt-1 uppercase">
-                    {reg.jenisPenyertaan} - {reg.pakejPilihan}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 font-medium">
-                    Peserta: {(reg.senaraiPeserta || []).join(', ')}
-                  </p>
-                </div>
-
-                <div className="text-right">
-                  <span className="text-sm font-black text-emerald-800 block">
-                    RM {reg.totalAmount.toFixed(2)}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-500 block">
-                    {reg.opsiBayaran === 'Ansuran' ? `Ansuran (${totalMonthsCount} Bulan)` : 'Bayaran Penuh'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Installment Schedule if Ansuran */}
-              {reg.opsiBayaran === 'Ansuran' && installmentsToRender.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs font-extrabold text-slate-800">
-                    <span>Jadual Ansuran Bulanan:</span>
-                    <span className="text-indigo-800 font-black">
-                      {reg.statusPendaftaran === 'DITAMATKAN' ? (
-                        'SELESAI / TAMAT'
-                      ) : reg.statusPendaftaran === 'DISEMAK' ? (
-                        'DISEMAK (ON HOLD)'
-                      ) : (
-                        `${reg.monthsPaid || 0} / ${reg.totalMonths || totalMonthsCount} Bulan Selesai`
-                      )}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {installmentsToRender.map((inst, idx) => {
-                      const cartItemId = `qurban-cart-${reg.id}-m${inst.monthIndex}`;
-                      const isSelected = cartPackageIds.includes(cartItemId);
-                      const isDeposit = inst.monthIndex === 1;
-
-                      // Check if already paid
-                      const isPaid = inst.status === 'Lulus' || 
-                        (reg.monthsPaid != null && inst.monthIndex <= reg.monthsPaid) ||
-                        (isDeposit && (reg.paymentStatus === 'Deposit Dibayar' || reg.paymentStatus === 'Selesai'));
-
-                      // Check if cash payment method was selected for deposit or this installment
-                      const isCash = inst.paymentMethod === 'Tunai' || (isDeposit && reg.caraPembayaran === 'Tunai');
-                      const isDepositCashOnHold = isDeposit && isCash && !isPaid;
-
-                      // Review or pending states
-                      const isPendingReview = inst.status === 'Belum Disahkan' || inst.status === 'Pending' || pendingPackageIds.includes(cartItemId);
-                      const isRegOnHold = reg.statusPendaftaran === 'DISEMAK' || reg.paymentStatus === 'Dalam Semakan';
-
-                      return (
-                        <div
-                          key={idx}
-                          className={`p-2.5 rounded-xl border text-xs flex justify-between items-center ${
-                            isPaid
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                              : isDepositCashOnHold || isPendingReview || isRegOnHold
-                              ? 'bg-amber-50/60 border-amber-200 text-amber-900'
-                              : 'bg-white border-slate-200 text-slate-700'
-                          }`}
-                        >
-                          <div>
-                            <span className="font-extrabold block text-[11px]">{inst.monthName}</span>
-                            <span className="text-[10px] font-bold text-slate-500">RM {inst.amount.toFixed(2)}</span>
-                          </div>
-
-                          {isPaid ? (
-                            <span 
-                              className="text-[10px] font-black text-emerald-800 flex items-center gap-1 bg-emerald-100/70 border border-emerald-200 px-2.5 py-1 rounded-lg shadow-2xs select-none cursor-not-allowed"
-                              title={isCash ? "Bayaran deposit tunai telah disahkan (On Hold / Dikunci)" : "Ansuran telah selesai dibayar"}
-                            >
-                              <CheckCircle2 size={12} className="text-emerald-700" />
-                              <span>{isCash ? 'ON HOLD (DIBAYAR TUNAI)' : 'LULUS'}</span>
-                            </span>
-                          ) : isDepositCashOnHold ? (
-                            <span 
-                              className="text-[10px] font-black text-amber-800 flex items-center gap-1 bg-amber-100/80 border border-amber-300 px-2.5 py-1 rounded-lg shadow-2xs select-none cursor-not-allowed"
-                              title="Bayaran deposit tunai on hold dan dalam proses pengesahan admin persatuan"
-                            >
-                              <Clock size={12} className="text-amber-700" />
-                              <span>ON HOLD (TUNAI)</span>
-                            </span>
-                          ) : reg.statusPendaftaran === 'DITAMATKAN' ? (
-                            <button
-                              type="button"
-                              disabled
-                              className="px-2.5 py-1 bg-rose-50 text-rose-500 border border-rose-200 font-black text-[10px] rounded-lg shadow-2xs cursor-not-allowed flex items-center gap-1"
-                            >
-                              <span>DITAMATKAN</span>
-                            </button>
-                          ) : isRegOnHold ? (
-                            <button
-                              type="button"
-                              disabled
-                              className="px-2.5 py-1 bg-amber-50 text-amber-600 border border-amber-200 font-black text-[10px] rounded-lg shadow-2xs cursor-not-allowed flex items-center gap-1"
-                            >
-                              <span>ON HOLD</span>
-                            </button>
-                          ) : isPendingReview ? (
-                            <span className="text-[10px] font-black text-amber-700 flex items-center gap-0.5 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg shadow-2xs">
-                              <Clock size={12} /> BELUM DISAHKAN
-                            </span>
-                          ) : isSelected ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setCartPackageIds(prev => prev.filter(id => id !== cartItemId));
-                              }}
-                              className="px-2.5 py-1 bg-indigo-50 text-[#3f3ebd] border border-indigo-200 font-black text-[10px] rounded-lg shadow-2xs transition-all cursor-pointer flex items-center gap-1"
-                            >
-                              <Check size={11} className="stroke-[3]" />
-                              <span>Ditambah</span>
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newPkg: ImageFeePackage = {
-                                  id: cartItemId,
-                                  name: `Ansuran ${reg.pakejPilihan} (${inst.monthName})`,
-                                  subtitle: `${reg.jenisPenyertaan} - Sesi ${reg.sessionYear}`,
-                                  price: inst.amount,
-                                  priceLabel: `RM ${inst.amount.toFixed(2)}`,
-                                  isPaid: false,
-                                  category: 'Tambahan',
-                                  realCategory: 'Qurban & Aqiqah'
-                                };
-                                setPackages(prev => prev.some(p => p.id === cartItemId) ? prev : [...prev, newPkg]);
-                                setCartPackageIds(prev => Array.from(new Set([...prev, cartItemId])));
-                              }}
-                              className="px-2.5 py-1 bg-[#3f3ebd] hover:bg-[#3433a3] text-white font-black text-[10px] rounded-lg shadow-2xs transition-all cursor-pointer flex items-center gap-1"
-                            >
-                              <span>+ Tambah</span>
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* PDF Download Button */}
-              <div className="pt-2 border-t border-slate-200/60 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => printQurbanRegistrationPdf(reg, sysQurbanConfig)}
-                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  <Download size={13} />
-                  <span>Muat Turun Borang Pendaftaran (PDF)</span>
-                </button>
-              </div>
-            </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="w-full space-y-6 px-1 lg:px-4 py-2 pb-24 font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
@@ -2623,11 +2126,6 @@ export default function YuranSection({
 
         </div>
 
-        {/* Mobile View Qurban Section (Atas Sejarah Pembayaran) */}
-        <div className="block lg:hidden">
-          {renderUserQurbanSection()}
-        </div>
-
         {/* COLUMN 3: Sejarah Transaksi (col-span-4) */}
         <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-6 order-3">
           <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-6 space-y-4">
@@ -2716,11 +2214,6 @@ export default function YuranSection({
           </div>
         </div>
 
-      </div>
-
-      {/* Desktop View Qurban Section (Bahagian Bawah Sekali) */}
-      <div className="hidden lg:block mt-6">
-        {renderUserQurbanSection()}
       </div>
 
       {/* 5. TROLI ANDA FLOATING / STICKY FOOTER */}
@@ -3689,93 +3182,7 @@ export default function YuranSection({
                       </div>
                     </div>
 
-                    {/* Qurban & Aqiqah Installments Checklist for Selected Member */}
-                    {selectedMemberQurbanRegs.length > 0 && (
-                      <div className="space-y-2 pt-2 border-t border-slate-200">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-black text-slate-800 block uppercase tracking-wide">
-                            Pendaftaran Qurban & Aqiqah (Ansuran Ahli)
-                          </label>
-                          <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                            Qurban Aqiqah
-                          </span>
-                        </div>
 
-                        {selectedMemberQurbanRegs.map(reg => (
-                          <div key={reg.id} className="bg-emerald-50/40 p-3 rounded-xl border border-emerald-100 space-y-2">
-                            <div className="flex justify-between items-start text-xs">
-                              <div>
-                                <h5 className="font-black text-slate-900 uppercase">{reg.jenisPenyertaan} - {reg.pakejPilihan}</h5>
-                                <p className="text-[10px] text-slate-500 font-bold">Sesi {reg.sessionYear} • {reg.opsiBayaran === 'Ansuran' ? `Ansuran ${reg.tempohAnsuranBulan} Bulan` : 'Bayaran Penuh'}</p>
-                              </div>
-                              <span className="font-black text-emerald-800">RM {reg.totalAmount.toFixed(2)}</span>
-                            </div>
-
-                            {/* Installment Months checklist */}
-                            {reg.installmentPayments && reg.installmentPayments.length > 0 ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                                {reg.installmentPayments.map(inst => {
-                                  const isPaid = inst.status === 'Lulus';
-                                  const isSelected = (selectedManualQurbanMonths[reg.id] || []).includes(inst.monthIndex);
-                                  return (
-                                    <div
-                                      key={inst.monthIndex}
-                                      onClick={() => {
-                                        if (!isPaid && !uploadingManual && !adminManualSuccess) {
-                                          handleToggleManualQurbanMonth(reg.id, inst.monthIndex);
-                                        }
-                                      }}
-                                      className={`p-2 rounded-lg border text-xs flex items-center justify-between transition-all ${
-                                        isPaid
-                                          ? 'bg-emerald-100/50 border-emerald-200 opacity-60 cursor-not-allowed text-emerald-900'
-                                          : isSelected
-                                            ? 'bg-emerald-600 text-white border-emerald-600 cursor-pointer font-bold shadow-xs'
-                                            : 'bg-white border-slate-200 hover:border-emerald-300 cursor-pointer text-slate-800 font-medium'
-                                      }`}
-                                    >
-                                      <div>
-                                        <span className="font-extrabold text-[11px] block">{inst.monthName}</span>
-                                        <span className={`text-[10px] ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>RM {inst.amount.toFixed(2)}</span>
-                                      </div>
-                                      {isPaid ? (
-                                        <span className="text-[9px] font-black bg-emerald-200 text-emerald-800 px-1.5 py-0.5 rounded">Lulus</span>
-                                      ) : (
-                                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-white text-emerald-700 border-white' : 'border-slate-300 bg-white'}`}>
-                                          {isSelected && <Check size={10} className="stroke-[3]" />}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              /* Single / Full payment registration */
-                              <div className="pt-1">
-                                {reg.paymentStatus === 'Selesai' ? (
-                                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md block text-center">Bayaran Penuh Selesai</span>
-                                ) : (
-                                  <div
-                                    onClick={() => {
-                                      if (!uploadingManual && !adminManualSuccess) {
-                                        handleToggleManualQurbanMonth(reg.id, 1);
-                                      }
-                                    }}
-                                    className={`p-2 rounded-lg border text-xs flex items-center justify-between cursor-pointer ${
-                                      (selectedManualQurbanMonths[reg.id] || []).includes(1)
-                                        ? 'bg-emerald-600 text-white border-emerald-600 font-bold'
-                                        : 'bg-white border-slate-200 hover:border-emerald-300 text-slate-800'
-                                    }`}
-                                  >
-                                    <span>Bayaran Penuh Qurban ({reg.pakejPilihan})</span>
-                                    <span className="font-black">RM {reg.totalAmount.toFixed(2)}</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
 
                     {/* Total Summary */}
                     {selectedManualPackageIds.length > 0 && (
@@ -3875,7 +3282,7 @@ export default function YuranSection({
                 >
                   Batal
                 </button>
-                {selectedMemberId && (selectedManualPackageIds.length > 0 || Object.values(selectedManualQurbanMonths).some((arr: any) => Array.isArray(arr) && arr.length > 0)) && !adminManualSuccess && (
+                {selectedMemberId && selectedManualPackageIds.length > 0 && !adminManualSuccess && (
                   <button
                     type="button"
                     onClick={handleSubmitManualPayment}

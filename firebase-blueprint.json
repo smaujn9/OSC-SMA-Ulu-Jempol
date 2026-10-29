@@ -302,6 +302,51 @@
         "timestamp": { "type": "object" }
       },
       "required": ["uid", "loginMethod"]
+    },
+    "CaseRecord": {
+      "title": "CaseRecord",
+      "description": "School discipline incident case record based on 5W 1H principles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "caseNo": { "type": "string" },
+        "pengaduUid": { "type": "string" },
+        "pengaduName": { "type": "string" },
+        "pengaduRole": { "type": "string" },
+        "penerimaName": { "type": "string" },
+        "penerimaHouseNo": { "type": "string" },
+        "tarikhKes": { "type": "string" },
+        "masaKes": { "type": "string" },
+        "jenisKes": { "type": "string" },
+        "tahapKesalahan": { "type": "string", "enum": ["Ringan", "Sederhana", "Berat"] },
+        "whatPerincian": { "type": "string" },
+        "namaMurid": { "type": "string" },
+        "kelasMurid": { "type": "string" },
+        "noPelajar": { "type": "string" },
+        "saksiKejadian": { "type": "string" },
+        "pihakTerlibatLain": { "type": "string" },
+        "sesiKejadian": { "type": "string" },
+        "lokasiKejadian": { "type": "string" },
+        "lokasiPerincian": { "type": "string" },
+        "puncaKejadian": { "type": "string" },
+        "sebabPerincian": { "type": "string" },
+        "kronologiKejadian": { "type": "string" },
+        "tindakanAwalGuru": { "type": "string" },
+        "isPoliceReport": { "type": "boolean" },
+        "balaiPolis": { "type": "string" },
+        "noRepotPolis": { "type": "string" },
+        "keterangan": { "type": "string" },
+        "buktiGambarUrl": { "type": "string" },
+        "keteranganSiasatan": { "type": "string" },
+        "keteranganSelesai": { "type": "string" },
+        "buktiSelesaiUrl": { "type": "string" },
+        "pengaduSignatureUrl": { "type": "string" },
+        "penerimaSignatureUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["Dalam Siasatan", "Dirujuk Kaunseling / HEM", "Dirujuk PDRM", "Selesai", "Arsip"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["caseNo", "pengaduName", "jenisKes", "keterangan", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -371,7 +416,7 @@
     },
     "/cases/{caseId}": {
       "schema": "CaseRecord",
-      "description": "Community incident case records registered by AJK"
+      "description": "Student discipline case records registered by Admin Utama and Guru"
     },
     "/users/{userId}": {
       "schema": "AppUser",

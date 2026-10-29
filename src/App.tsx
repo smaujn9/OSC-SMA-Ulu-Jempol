@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Post, FeeItem, Comment, ImageFeePackage, BlogItem, UpcomingEvent, Announcement, AppNotification, ActiveMember, QurbanRegistration, CaseRecord } from './types';
+import { Post, FeeItem, Comment, ImageFeePackage, BlogItem, UpcomingEvent, Announcement, AppNotification, ActiveMember, CaseRecord } from './types';
 import { INITIAL_POSTS, INITIAL_FEES, USER_AHMAD, BLOG_POSTS, ANNOUNCEMENTS } from './data/mockData';
 import { DEFAULT_YURAN_CONFIG, generatePackagesFromConfig, YuranConfig, getPackagePrice, computeAllPaidPackageIds } from './utils/yuranConfigHelper';
 import DesktopView from './components/DesktopView';
@@ -55,11 +55,8 @@ const getRouteFromPath = (path: string, userRole?: string) => {
     return { desktop: 'kelulusan-ahli', mobile: 'kelulusan-ahli' };
   }
   if (cleanPath === '/kehadiran') return { desktop: 'kehadiran', mobile: 'kehadiran' };
-  if (cleanPath === '/qurban' || cleanPath === '/qurban-aqiqah') {
-    return { desktop: 'qurban_register', mobile: 'qurban_register' };
-  }
-  if (cleanPath === '/urus-qurban') {
-    return { desktop: 'urus_qurban', mobile: 'urus_qurban' };
+  if (cleanPath === '/qurban' || cleanPath === '/qurban-aqiqah' || cleanPath === '/urus-qurban') {
+    return { desktop: 'dashboard', mobile: 'utama' };
   }
   if (cleanPath === '/kertaskerja' || cleanPath === '/kertas-kerja') {
     return { desktop: 'kertas-kerja', mobile: 'kertas-kerja' };
@@ -108,8 +105,6 @@ const getPathFromView = (desktopView: string) => {
   if (desktopView === 'ahli') return '/ajk';
   if (desktopView === 'kelulusan-ahli') return '/kelulusan-ahli';
   if (desktopView === 'kehadiran') return '/kehadiran';
-  if (desktopView === 'qurban_register') return '/qurban';
-  if (desktopView === 'urus_qurban') return '/urus-qurban';
   if (desktopView === 'kertas-kerja') return '/kertaskerja';
   if (desktopView === 'perbelanjaan-program') return '/perbelanjaan';
   if (desktopView === 'baucar') return '/baucar';
@@ -459,65 +454,6 @@ export default function App() {
   const [completedDonation, setCompletedDonation] = useState<DonationReceiptData | null>(null);
   const [showDonationSuccessModal, setShowDonationSuccessModal] = useState<boolean>(false);
 
-  // Auto-restore Qurban cart items from Firestore qurbanRegistrations if in cartPackageIds
-  useEffect(() => {
-    if (!db || !firebaseUser || firebaseUser.isAnonymous) return;
-    const qurbanCartIds = cartPackageIds.filter(id => id.startsWith('qurban-cart-'));
-    if (qurbanCartIds.length === 0) return;
-
-    const unsub = onSnapshot(collection(db, 'qurbanRegistrations'), (snap) => {
-      const qurbanItemsToAdd: ImageFeePackage[] = [];
-      snap.forEach(d => {
-        const reg = d.data() as QurbanRegistration;
-        if ((reg.userUid === firebaseUser.uid || reg.userEmail === (currentUserDoc?.email || firebaseUser.email)) && 
-            reg.statusPendaftaran !== 'Batal' && 
-            reg.statusPendaftaran !== 'DITAMATKAN' && 
-            reg.statusPendaftaran !== 'DISEMAK') {
-          qurbanCartIds.forEach(cartId => {
-            if (cartId.startsWith(`qurban-cart-${reg.id}`)) {
-              const match = cartId.match(/m(\d+)$/);
-              const mIdx = match ? parseInt(match[1]) : 1;
-              const inst = reg.installmentPayments?.find(i => i.monthIndex === mIdx);
-              
-              const itemAmount = inst ? inst.amount : (reg.opsiBayaran === 'Ansuran' ? reg.depositAmount : reg.totalAmount);
-              const itemName = inst 
-                ? `Ansuran ${reg.pakejPilihan} (${inst.monthName})`
-                : (reg.opsiBayaran === 'Ansuran' ? `Deposit Qurban & Aqiqah (${reg.pakejPilihan}) - Bulan 1` : `Bayaran Penuh Qurban & Aqiqah (${reg.pakejPilihan})`);
-              
-              qurbanItemsToAdd.push({
-                id: cartId,
-                name: itemName,
-                subtitle: `${reg.jenisPenyertaan} (${reg.sessionYear})`,
-                price: itemAmount,
-                priceLabel: `RM ${itemAmount.toFixed(2)}`,
-                isPaid: false,
-                category: 'Tambahan',
-                realCategory: 'Qurban & Aqiqah'
-              });
-            }
-          });
-        }
-      });
-
-      if (qurbanItemsToAdd.length > 0) {
-        setPackages(prev => {
-          let changed = false;
-          const next = [...prev];
-          qurbanItemsToAdd.forEach(item => {
-            if (!next.some(p => p.id === item.id)) {
-              next.push(item);
-              changed = true;
-            }
-          });
-          return changed ? next : prev;
-        });
-      }
-    }, (err) => {
-      console.warn("Ralat memulihkan qurbanRegistrations dalam troli:", err);
-    });
-
-    return () => unsub();
-  }, [db, firebaseUser, currentUserDoc, cartPackageIds]);
 
 
   // Remove pending or paid package IDs from cart automatically
@@ -1390,16 +1326,12 @@ export default function App() {
           let yuranAmount = 0;
           let khairatAmount = 0;
 
-          const isQurban = p.realCategory === 'Qurban & Aqiqah' || p.id.startsWith('qurban-cart-');
-          const isTambahan = !isQurban && p.category === 'Tambahan';
-          const isTahunan = !isQurban && !isTambahan && (p.category === 'Tahunan' || p.name.includes('PerTahun') || p.name.includes('Tahunan') || p.name.includes('12 Bulan'));
-          const isPenggal = !isQurban && !isTambahan && (p.category === 'Penggal' || p.name.includes('Perpenggal') || p.name.includes('Penggal') || p.name.includes('6 Bulan'));
-          const isBulanan = !isQurban && !isTambahan && (p.category === 'Bulanan' || p.name.includes('Bulanan'));
+          const isTambahan = p.category === 'Tambahan';
+          const isTahunan = !isTambahan && (p.category === 'Tahunan' || p.name.includes('PerTahun') || p.name.includes('Tahunan') || p.name.includes('12 Bulan'));
+          const isPenggal = !isTambahan && (p.category === 'Penggal' || p.name.includes('Perpenggal') || p.name.includes('Penggal') || p.name.includes('6 Bulan'));
+          const isBulanan = !isTambahan && (p.category === 'Bulanan' || p.name.includes('Bulanan'));
 
-          if (isQurban) {
-            yuranAmount = getPackagePrice(p);
-            khairatAmount = 0;
-          } else if (isTambahan) {
+          if (isTambahan) {
             yuranAmount = getPackagePrice(p);
           } else if (isTahunan) {
             khairatAmount = yuranConfig?.yuranTahunan?.khairat ?? 60;
@@ -1421,7 +1353,7 @@ export default function App() {
 
           if (yuranAmount > 0) {
             const nextIdNum1 = transactions.length + newTxnsList.length + 1;
-            const creditAcc = isQurban ? "Qurban Aqiqah" : (isTambahan ? (p.realCategory || "Yuran Tambahan") : "Yuran Bulanan");
+            const creditAcc = isTambahan ? (p.realCategory || "Yuran Tambahan") : "Yuran Bulanan";
             const sessionTag = p.sessionYear ? ` - Sesi ${p.sessionYear}` : '';
             newTxnsList.push({
               id: `TXN-2026-${String(nextIdNum1).padStart(4, '0')}`,
@@ -1454,38 +1386,6 @@ export default function App() {
                 }
               ]
             });
-
-            // Kemaskini rekod pendaftaran Qurban di Firestore sekiranya lulus
-            if (isQurban && !isPending && db) {
-              const match = p.id.match(/^qurban-cart-(.+)-m(\d+)$/);
-              if (match) {
-                const qRegId = match[1];
-                const mIdx = parseInt(match[2]);
-                const qDocRef = doc(db, 'qurbanRegistrations', qRegId);
-                getDoc(qDocRef).then(qSnap => {
-                  if (qSnap.exists()) {
-                    const qData = qSnap.data() as QurbanRegistration;
-                    const insts = qData.installmentPayments ? [...qData.installmentPayments] : [];
-                    if (insts[mIdx - 1]) {
-                      insts[mIdx - 1].status = 'Lulus';
-                      insts[mIdx - 1].paidAt = dateStr;
-                      insts[mIdx - 1].paymentMethod = isManual ? 'Manual' : 'FPX';
-                    }
-                    const mPaid = insts.length > 0 ? insts.filter(i => i.status === 'Lulus').length : 1;
-                    const totMonths = qData.totalMonths || 1;
-                    const pStatus = mPaid >= totMonths ? 'Selesai' : (mPaid > 0 ? 'Ansuran Berjalan' : 'Deposit Dibayar');
-                    
-                    updateDoc(qDocRef, {
-                      installmentPayments: insts,
-                      monthsPaid: mPaid,
-                      paymentStatus: pStatus,
-                      statusPendaftaran: 'Disahkan',
-                      updatedAt: new Date().toISOString()
-                    }).catch(err => console.error("Ralat update qurbanRegistrations:", err));
-                  }
-                }).catch(err => console.error("Ralat getDoc qurbanRegistrations:", err));
-              }
-            }
           }
           if (khairatAmount > 0) {
             const nextIdNum2 = transactions.length + newTxnsList.length + 1;
@@ -1568,9 +1468,8 @@ export default function App() {
     if (!isManual && actualPaid.length > 0) {
       const fpxFeeAmt = yuranConfig.fpxCharge ?? 1.00;
       
-      const hasQurban = actualPaid.some(p => p.realCategory === 'Qurban & Aqiqah' || p.id.startsWith('qurban-cart-'));
-      const hasOtherTambahan = actualPaid.some(p => p.category === 'Tambahan' && p.realCategory !== 'Qurban & Aqiqah' && !p.id.startsWith('qurban-cart-'));
-      const isSurchargeMode = hasQurban && !hasOtherTambahan ? false : (hasOtherTambahan ? true : (yuranConfig.fpxSurchargeMode ?? true));
+      const hasOtherTambahan = actualPaid.some(p => p.category === 'Tambahan');
+      const isSurchargeMode = hasOtherTambahan ? true : (yuranConfig.fpxSurchargeMode ?? true);
       
       if (isSurchargeMode) {
         // --- SURCHARGE MODE ---

@@ -1611,7 +1611,7 @@ export default function KertasKerjaSection({ isMobile, onBack }: KertasKerjaSect
                   <option key={ahli.uid} value={ahli.uid}>{ahli.name}</option>
                 ))}
               </select>
-              <p className="text-[10px] text-slate-500 mt-1">Bendahari program yang dipilih akan mendapat akses ke modul Perbelanjaan Program untuk kertas kerja ini.</p>
+              <p className="text-[10px] text-slate-500 mt-1">Bendahari program yang dipilih akan bertanggungjawab bagi urusan rekod dan pengurusan kewangan program untuk kertas kerja ini.</p>
             </div>
           </div>
 

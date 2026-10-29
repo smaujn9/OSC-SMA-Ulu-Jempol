@@ -31,20 +31,15 @@ import AdminSection from './AdminSection';
 import AhliJawatankuasaSection from './AhliJawatankuasaSection';
 import { AssociationLogo } from './AssociationLogo';
 import DokumenSection from './DokumenSection';
-import { BaucarSection } from './BaucarSection';
 import SuratSection from './SuratSection';
 import MinitMesyuaratSection from './MinitMesyuaratSection';
 import NotisPanggilanSection from './NotisPanggilanSection';
 import KehadiranSection from './KehadiranSection';
 import KertasKerjaSection from './KertasKerjaSection';
-import PerbelanjaanProgramSection from './PerbelanjaanProgramSection';
-import ComplaintModal from './ComplaintModal';
 import { ConfirmLogoutModal } from './ConfirmLogoutModal';
 import BannerLaporkanKes from './BannerLaporkanKes';
 import BannerSumbangan from './BannerSumbangan';
-import QurbanAqiqahSection from './QurbanAqiqahSection';
-import AdminQurbanSection from './AdminQurbanSection';
-import { getAutoHijriQurbanSession, QurbanConfig } from '../utils/qurbanHelper';
+
 import KelulusanAhliSection from './KelulusanAhliSection';
 import BlogImageCarousel from './BlogImageCarousel';
 import { SumbanganModal } from './SumbanganModal';
@@ -310,16 +305,6 @@ export default function MobileView({
     ))
   );
 
-  const hasBaucarAccess = Boolean(
-    isAdminUtama ||
-    isGuru ||
-    (currentUserDoc && (
-      ['Admin Utama', 'ADMIN UTAMA', 'GURU', 'Guru', 'Bendahari', 'Pengerusi', 'Setiausaha'].includes(currentUserDoc.role) ||
-      currentUserDoc.isSuperAdmin === true ||
-      isAhliAktif
-    ))
-  );
-
   const hasKewanganAccess = Boolean(
     isAdminUtama ||
     isGuru ||
@@ -399,7 +384,6 @@ export default function MobileView({
   const [activeBlog, setActiveBlog] = useState<BlogItem | null>(null);
   const guestAvatar = "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0663661842.firebasestorage.app/o/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3407.jpg?alt=media&token=429fd764-c3d9-44df-98c8-6307546354fc";
   const [showInstallModal, setShowInstallModal] = useState(false);
-  const [isComplaintOpen, setIsComplaintOpen] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState(USER_AHMAD.avatar);
   const [currentName, setCurrentName] = useState(() => localStorage.getItem('tmf2_contact_nickname') || USER_AHMAD.name);
   const [currentCalendarDate, setCurrentCalendarDate] = useState<Date>(() => new Date());
@@ -562,79 +546,7 @@ export default function MobileView({
   });
 
   const [tickedNotice, setTickedNotice] = useState<NotisPanggilan | null>(null);
-  const [sysQurbanConfig, setSysQurbanConfig] = useState<QurbanConfig | null>(null);
-  const [userHasQurbanRegs, setUserHasQurbanRegs] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (!db) return;
-    const unsub = onSnapshot(doc(db, 'system', 'qurbanConfig'), (docSnap) => {
-      if (docSnap.exists()) {
-        setSysQurbanConfig(docSnap.data() as QurbanConfig);
-      }
-    }, (err) => {
-      console.warn("Ralat muat qurbanConfig di MobileView:", err);
-    });
-    return () => unsub();
-  }, [db]);
-
-  useEffect(() => {
-    const fUid = firebaseUser && !firebaseUser.isAnonymous && firebaseUser.uid !== 'guest_local' ? firebaseUser.uid : '';
-    const docUid = currentUserDoc?.uid && currentUserDoc.uid !== 'guest_local' ? currentUserDoc.uid : '';
-    const uEmail = (currentUserDoc?.email || firebaseUser?.email || '').trim().toLowerCase();
-    const uIc = (currentUserDoc?.icNumber || (currentUserDoc as any)?.noKadPengenalan || '').replace(/[^0-9]/g, '');
-
-    const matchesUser = (data: any) => {
-      if (!data || data.statusPendaftaran === 'Batal' || data.statusPendaftaran === 'DITAMATKAN') return false;
-      if (fUid && data.userUid === fUid) return true;
-      if (docUid && data.userUid === docUid) return true;
-      const regEmail1 = (data.userEmail || '').trim().toLowerCase();
-      const regEmail2 = (data.emel || '').trim().toLowerCase();
-      if (uEmail && (regEmail1 === uEmail || regEmail2 === uEmail)) return true;
-      const regIc = (data.noKadPengenalan || '').replace(/[^0-9]/g, '');
-      if (uIc && regIc && regIc === uIc) return true;
-      return false;
-    };
-
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('tmf2_qurban_registrations_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.some(matchesUser)) {
-            setUserHasQurbanRegs(true);
-          }
-        }
-      } catch (e) {}
-    }
-
-    if (!db || (!fUid && !docUid && !uEmail && !uIc)) {
-      return;
-    }
-    const q = query(collection(db, 'qurbanRegistrations'));
-    const unsub = onSnapshot(q, (snapshot) => {
-      let found = false;
-      const allActive: any[] = [];
-      snapshot.forEach((docSnap) => {
-        const d: any = docSnap.data();
-        const item = { ...d, id: d.id || docSnap.id };
-        if (item.statusPendaftaran !== 'Batal' && item.statusPendaftaran !== 'DITAMATKAN') {
-          allActive.push(item);
-        }
-        if (matchesUser(item)) {
-          found = true;
-        }
-      });
-      setUserHasQurbanRegs(found);
-      if (typeof window !== 'undefined' && (allActive.length > 0 || !snapshot.metadata.fromCache)) {
-        try {
-          localStorage.setItem('tmf2_qurban_registrations_cache', JSON.stringify(allActive));
-        } catch (e) {}
-      }
-    }, (err) => {
-      console.warn("Ralat semak qurbanRegistrations di MobileView:", err);
-    });
-    return () => unsub();
-  }, [db, firebaseUser?.uid, firebaseUser?.email, currentUserDoc?.uid, currentUserDoc?.email, currentUserDoc?.icNumber]);
 
   useEffect(() => {
     if (!db) {
@@ -776,11 +688,8 @@ export default function MobileView({
   const selectedCartPackages = packages.filter(p => cartPackageIds.includes(p.id));
   const subTotalCart = selectedCartPackages.reduce((sum, p) => sum + getPackagePrice(p), 0);
   const cartFpxFee = selectedCartPackages.length > 0 ? (yuranConfig.fpxCharge ?? 1.00) : 0.00;
-  const hasQurbanInCart = selectedCartPackages.some(p => p.realCategory === 'Qurban & Aqiqah' || p.id.startsWith('qurban-cart-'));
-  const hasOtherTambahanInCart = selectedCartPackages.some(p => p.category === 'Tambahan' && p.realCategory !== 'Qurban & Aqiqah' && !p.id.startsWith('qurban-cart-'));
-  const isFpxSurcharge = hasQurbanInCart && !hasOtherTambahanInCart
-    ? false
-    : (hasOtherTambahanInCart ? true : (yuranConfig.fpxSurchargeMode ?? true));
+  const hasOtherTambahanInCart = selectedCartPackages.some(p => p.category === 'Tambahan');
+  const isFpxSurcharge = hasOtherTambahanInCart ? true : (yuranConfig.fpxSurchargeMode ?? true);
   const cartTotalAmount = selectedCartPackages.length > 0
     ? isFpxSurcharge 
       ? subTotalCart + cartFpxFee 
@@ -2152,23 +2061,6 @@ export default function MobileView({
                     </button>
 
                     <button
-                      onClick={() => setCurrentTab('baucar')}
-                      className="flex flex-col items-center text-center cursor-pointer group animate-in zoom-in duration-150 relative min-w-0 w-full"
-                    >
-                      {!hasBaucarAccess && (
-                        <div className="absolute -top-1 -right-1 text-slate-400 z-10 bg-slate-50 rounded-full">
-                          <Lock size={12} className="fill-slate-100" />
-                        </div>
-                      )}
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-1 shadow-xs shrink-0 transition-all text-indigo-600 bg-indigo-50 border border-indigo-100 group-hover:bg-indigo-100">
-                        <FileCheck size={16} />
-                      </div>
-                      <span className="text-[8px] font-bold text-gray-600 leading-tight line-clamp-2 w-full px-0.5 break-words">
-                        Baucar Bayaran
-                      </span>
-                    </button>
-
-                    <button
                       onClick={() => {
                         if (hasKertasKerjaAccess) {
                           setCurrentTab('kertas-kerja');
@@ -2188,18 +2080,6 @@ export default function MobileView({
                       </div>
                       <span className="text-[8px] font-bold text-gray-600 leading-tight line-clamp-2 w-full px-0.5 break-words">
                         Kertas Kerja
-                      </span>
-                    </button>
-
-                    <button
-                      onClick={() => setCurrentTab('perbelanjaan-program')}
-                      className="flex flex-col items-center text-center cursor-pointer group animate-in zoom-in duration-150 relative min-w-0 w-full"
-                    >
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-1 shadow-xs shrink-0 transition-all text-amber-600 bg-amber-50 border border-amber-100 group-hover:bg-amber-100">
-                        <Wallet size={16} />
-                      </div>
-                      <span className="text-[8px] font-bold text-gray-600 leading-tight line-clamp-2 w-full px-0.5 break-words">
-                        Perbelanjaan Program
                       </span>
                     </button>
 
@@ -2398,68 +2278,12 @@ export default function MobileView({
               );
             })()}
 
-            {/* Banner Aduan */}
-            <div 
-              onClick={() => setIsComplaintOpen(true)}
-              className="relative bg-gradient-to-br from-rose-600 to-amber-600 rounded-2xl p-4 overflow-hidden shadow-lg shadow-rose-900/10 cursor-pointer group border border-rose-500/30"
-            >
-              <div className="absolute top-0 right-0 p-3 opacity-10">
-                <MessageSquare size={60} className="text-white transform rotate-12" />
-              </div>
-              <div className="relative z-10">
-                <div className="space-y-1 text-white pr-8">
-                  <h3 className="font-extrabold text-sm flex items-center gap-1.5">
-                    Aduan & Maklum Balas <ChevronRight size={14} />
-                  </h3>
-                  <p className="text-[10px] font-medium text-rose-100 leading-relaxed">
-                    Sampaikan sebarang masalah, aduan kerosakan, atau cadangan penambahbaikan terus kepada pihak jawatankuasa.
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Banner Sumbangan */}
             <BannerSumbangan onClick={() => setCurrentTab('sumbangan')} isMobile={true} />
 
-            {/* Banner Laporkan Kes (AJK) */}
+            {/* Banner Laporkan Kes Disiplin (Admin Utama & Guru) */}
             <BannerLaporkanKes isMobile={true} />
 
-            {/* Banner Pendaftaran Qurban & Aqiqah */}
-            {(() => {
-              const visibility = sysQurbanConfig?.bannerVisibility || (userHasQurbanRegs ? 'registered' : 'hide');
-              if (visibility === 'hide' && !userHasQurbanRegs) return null;
-              if (visibility === 'registered' && !userHasQurbanRegs) return null;
-
-              const qurbanSess = getAutoHijriQurbanSession(sysQurbanConfig?.sessionYearOverride);
-              return (
-                <div 
-                  onClick={() => setCurrentTab('qurban_register')}
-                  className="relative bg-gradient-to-br from-emerald-800 via-teal-800 to-emerald-900 rounded-2xl p-4 overflow-hidden shadow-lg shadow-emerald-950/20 cursor-pointer group border border-emerald-600/40"
-                >
-                  <div className="absolute top-0 right-0 p-2 opacity-15">
-                    <Heart size={70} className="text-emerald-300 transform rotate-12" />
-                  </div>
-                  <div className="relative z-10 space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="bg-amber-400 text-slate-950 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
-                        Sesi {qurbanSess.hijriYear}
-                      </span>
-                      <span className="bg-emerald-700/60 text-emerald-100 text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-emerald-500/30">
-                        Pendaftaran Dibuka
-                      </span>
-                    </div>
-                    <div className="space-y-0.5 text-white pr-6">
-                      <h3 className="font-extrabold text-sm flex items-center gap-1 text-amber-300">
-                        Pendaftaran Qurban & Aqiqah <ChevronRight size={14} className="text-white" />
-                      </h3>
-                      <p className="text-[10px] font-medium text-emerald-100 leading-relaxed">
-                        Sesi {qurbanSess.fullLabel} &bull; Mendaftar bahagian/ekor lembu atau kambing dengan kaedah bayaran penuh atau ansuran bulanan.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
 
             {/* Aktiviti Terkini feed */}
             <div className="space-y-3">
@@ -2889,52 +2713,6 @@ export default function MobileView({
               <AdminSection 
                 isMobile={true} 
                 onBack={() => setCurrentTab('utama')} 
-                onNavigateToUrusQurban={() => setCurrentTab('urus_qurban')}
-              />
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center px-4">
-              <Shield className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <h2 className="text-lg font-extrabold text-slate-900 mb-2">Akses Ditolak</h2>
-              <p className="text-sm text-slate-500">Anda tidak mempunyai kebenaran untuk melihat halaman ini.</p>
-              <button
-                onClick={() => setCurrentTab('utama')}
-                className="mt-6 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors"
-              >
-                Kembali ke Utama
-              </button>
-            </div>
-          )
-        )}
-
-        {currentTab === 'qurban_register' && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <QurbanAqiqahSection
-              onBack={() => setCurrentTab('utama')}
-              onNavigateToYuran={() => setCurrentTab('bayar_yuran')}
-              onNavigateToCart={() => {
-                setShowCartDropdown(true);
-              }}
-              onAddToCart={(cartItem) => {
-                if (setPackages) {
-                  setPackages(prev => {
-                    if (prev.some(p => p.id === cartItem.id)) return prev;
-                    return [...prev, cartItem];
-                  });
-                }
-                if (setCartPackageIds) {
-                  setCartPackageIds(prev => Array.from(new Set([...prev, cartItem.id])));
-                }
-              }}
-            />
-          </div>
-        )}
-
-        {currentTab === 'urus_qurban' && (
-          hasAdminAccess ? (
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <AdminQurbanSection
-                onBack={() => setCurrentTab('admin')}
               />
             </div>
           ) : (
@@ -3261,22 +3039,6 @@ export default function MobileView({
           )
         )}
 
-        {currentTab === 'baucar' && (
-          hasBaucarAccess ? (
-            <div className="bg-slate-50 min-h-screen">
-              <BaucarSection isMobile={true} onBack={() => setCurrentTab('utama')} />
-            </div>
-          ) : (
-            <div className="p-8 text-center mt-6">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-xs mb-4">
-                <span className="text-2xl">🛡️</span>
-              </div>
-              <h2 className="text-lg font-extrabold text-slate-900 mb-2">Akses Ditolak</h2>
-              <p className="text-sm text-slate-500">Halaman ini hanya boleh diakses oleh peranan Admin Utama, Bendahari, Pengerusi, dan Penerima Baucar yang berkaitan sahaja.</p>
-            </div>
-          )
-        )}
-
         {currentTab === 'kertas-kerja' && (
           !isGoogleSignedIn ? (
             <div className="flex flex-col items-center justify-center text-center p-6 bg-white rounded-2xl border border-slate-100 shadow-3xs max-w-sm mx-auto mt-6 space-y-4">
@@ -3315,48 +3077,6 @@ export default function MobileView({
               </div>
               <h2 className="text-lg font-extrabold text-slate-900 mb-2">Akses Ditolak</h2>
               <p className="text-sm text-slate-500">Halaman Kertas Kerja ini hanya boleh diakses oleh peranan Admin Utama, Pengerusi, Naib Pengerusi, Setiausaha, Naib Setiausaha, dan Bendahari sahaja.</p>
-            </div>
-          )
-        )}
-
-        {currentTab === 'perbelanjaan-program' && (
-          !isGoogleSignedIn ? (
-            <div className="flex flex-col items-center justify-center text-center p-6 bg-white rounded-2xl border border-slate-100 shadow-3xs max-w-sm mx-auto mt-6 space-y-4">
-              <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner">
-                <LogIn size={20} className="stroke-[2.5]" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-black text-slate-950 uppercase tracking-tight">LOG MASUK DIPERLUKAN</h3>
-                <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-                  Sila log masuk menggunakan akaun Google anda terlebih dahulu untuk mengakses halaman Perbelanjaan Program.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await loginWithGoogle();
-                  } catch (err) {
-                    console.error("Gagal log masuk:", err);
-                  }
-                }}
-                className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <LogIn size={12} className="stroke-[2.5]" />
-                <span>Log Masuk dengan Google</span>
-              </button>
-            </div>
-          ) : isAhliAktif ? (
-            <div className="bg-slate-50 min-h-screen p-1.5 sm:p-2">
-              <PerbelanjaanProgramSection isMobile={true} onBack={() => setCurrentTab('utama')} />
-            </div>
-          ) : (
-            <div className="p-8 text-center mt-6">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-xs mb-4">
-                <span className="text-2xl">🛡️</span>
-              </div>
-              <h2 className="text-lg font-extrabold text-slate-900 mb-2">Akses Ditolak</h2>
-              <p className="text-sm text-slate-500">Halaman ini hanya boleh diakses oleh ahli yang telah berdaftar dan diluluskan sahaja.</p>
             </div>
           )
         )}
@@ -4187,8 +3907,6 @@ export default function MobileView({
           </div>
         </div>
       )}
-
-      <ComplaintModal isOpen={isComplaintOpen} onClose={() => setIsComplaintOpen(false)} />
 
       <ConfirmLogoutModal
         isOpen={showLogoutConfirmModal}

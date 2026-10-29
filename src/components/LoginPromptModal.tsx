@@ -312,7 +312,7 @@ export default function LoginPromptModal({ currentView, currentTab }: LoginPromp
               </div>
               <div className="flex items-center gap-2.5 text-xs text-slate-700 font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-                <span>Ruang Sembang & Peti Aduan Warga Sekolah</span>
+                <span>Ruang Sembang Komuniti Warga Sekolah</span>
               </div>
             </div>
 

@@ -257,68 +257,6 @@ export interface PerbelanjaanProgram {
   createdAt: string;
 }
 
-export interface QurbanRegistrationInstallment {
-  monthIndex: number; // 1..totalMonths
-  monthName: string;  // e.g. "Bulan 1 (Deposit)", "Bulan 2", etc.
-  amount: number;
-  status: 'Belum Bayar' | 'Dalam Semakan' | 'Lulus' | 'Tolak';
-  paidAt?: string;
-  transactionId?: string;
-  paymentMethod?: 'Tunai' | 'FPX' | 'Manual';
-}
-
-export interface QurbanRegistration {
-  id: string;
-  userUid: string;
-  userEmail: string;
-  userName: string;
-  sessionYear: string; // e.g. "1448H / 2027M"
-  
-  // Form Step 1:
-  jenisPenyertaan: 'Qurban Sunat' | 'Qurban Wajib' | 'Aqiqah Sunat' | 'Aqiqah Wajib';
-  pakejPilihan: '1 BHG LEMBU' | '1 EKOR LEMBU' | '1 EKOR KAMBING';
-  pakejPrice: number;
-  managementFeeType?: 'percent' | 'fixed';
-  managementFeePercent?: number; // e.g. 5%
-  managementFeeFixed?: number;   // e.g. RM 50
-  managementFeeAmount: number;
-  totalAmount: number;
-  
-  // Form Step 2:
-  namaPenuh: string;
-  noIC: string;
-  noTelefon: string;
-  emel?: string;
-  alamat: string;
-  
-  // Form Step 3:
-  senaraiPeserta: string[];
-  
-  pilihanDaging: 'Mahu Ambil Daging' | 'Tidak Mahu Daging' | 'Simpan Daging';
-  opsiBayaran: 'Penuh' | 'Ansuran';
-  caraPembayaran: 'Tunai' | 'Online Transfer' | 'Manual Transfer';
-  tempohAnsuranBulan?: number; // e.g. 3, 5, or 10
-  resitUrl?: string;
-  
-  // Status tracking:
-  statusPendaftaran: 'Dalam Proses' | 'Disahkan' | 'Batal' | 'Tamat Tempoh' | 'DITAMATKAN' | 'DISEMAK';
-  paymentStatus: 'Belum Bayar' | 'Deposit Dibayar' | 'Ansuran Berjalan' | 'Selesai' | 'Dalam Semakan' | 'Terbatal';
-  
-  // Cash deadline (24 hours for Tunai):
-  cashDeadline?: string;
-  cashVerifiedAt?: string;
-  cashVerifiedBy?: string;
-  
-  // Installment breakdown:
-  depositAmount: number;
-  monthlyAmount?: number;
-  totalMonths?: number;
-  monthsPaid: number;
-  installmentPayments?: QurbanRegistrationInstallment[];
-  
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface LoginLog {
   id: string;
@@ -360,8 +298,35 @@ export interface CaseRecord {
   buktiSelesaiUrl?: string;
   pengaduSignatureUrl?: string;
   penerimaSignatureUrl?: string;
-  status: 'Dalam Siasatan' | 'Dirujuk PDRM' | 'Selesai' | 'Arsip';
+  status: 'Dalam Siasatan' | 'Dirujuk Kaunseling / HEM' | 'Dirujuk PDRM' | 'Selesai' | 'Arsip';
   createdAt: string;
   updatedAt?: string;
+
+  // 5W 1H Discipline Specific Fields
+  // WHAT: Apa kesalahan & tahap kesalahan
+  whatPerincian?: string;
+  tahapKesalahan?: 'Ringan' | 'Sederhana' | 'Berat';
+
+  // WHO: Siapa yang terlibat
+  namaMurid?: string;
+  kelasMurid?: string;
+  noPelajar?: string;
+  saksiKejadian?: string;
+  pihakTerlibatLain?: string;
+
+  // WHEN: Bila berlaku
+  sesiKejadian?: string;
+
+  // WHERE: Di mana berlaku
+  lokasiKejadian?: string;
+  lokasiPerincian?: string;
+
+  // WHY: Mengapa berlaku / punca
+  puncaKejadian?: string;
+  sebabPerincian?: string;
+
+  // HOW: Bagaimana berlaku & tindakan diambil
+  kronologiKejadian?: string;
+  tindakanAwalGuru?: string;
 }
 

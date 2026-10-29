@@ -842,49 +842,66 @@ Senarai Ahli Jawatankuasa Pelaksana (senaraiAhliJawatanKuasa) jadikan array of o
 // API Endpoint to generate formal incident description for Laporkan Kes
 app.post('/api/kes/generate-keterangan', async (req, res) => {
   try {
-    const { inputNotes, jenisKes, namaPenerima, noRumah, tarikhKes, masaKes, isPoliceReport, balaiPolis } = req.body;
+    const { 
+      inputNotes, 
+      jenisKes, 
+      tahapKesalahan,
+      namaMurid, 
+      kelasMurid, 
+      tarikhKes, 
+      masaKes, 
+      sesiKejadian,
+      lokasiKejadian,
+      puncaKejadian,
+      tindakanAwalGuru,
+      isPoliceReport, 
+      balaiPolis 
+    } = req.body;
+
     if (!inputNotes || !inputNotes.trim()) {
       return res.status(400).json({ error: 'Sila masukkan nota ringkas atau transkripsi kes.' });
     }
 
-    const prompt = `Anda adalah pembantu AI keselamatan dan hal ehwal murid/sekolah bagi Sekolah Menengah Agama Ulu Jempol (SMAUJ).
-Tugas anda adalah menyusun dan menjana Keterangan Laporan Kes yang formal, padat, terperinci, dan bertatabahasa tinggi dalam Bahasa Melayu berdasarkan nota ringkas atau transkripsi rakaman berikut.
+    const prompt = `Anda adalah pembantu AI unit disiplin dan hal ehwal murid bagi Sekolah Menengah Agama Ulu Jempol (SMAUJ).
+Tugas anda adalah menyusun dan menjana Keterangan Kronologi Laporan Kes Disiplin yang formal, tepat, objektif, berpandukan prinsip 5W dan 1H (What, Who, When, Where, Why, How) dalam Bahasa Melayu standard tatabahasa tinggi.
 
-Maklumat Kes:
-- Jenis Kes: ${jenisKes || 'Tidak dinyatakan'}
-- Nama Penerima / Pihak Terlibat: ${namaPenerima || 'Tidak dinyatakan'}
-- No. Rumah: ${noRumah || 'Tidak dinyatakan'}
-- Tarikh & Masa Kes: ${tarikhKes || ''} ${masaKes || ''}
-- Laporan Polis (PDRM): ${isPoliceReport ? `Ya (${balaiPolis || 'Balai Polis'})` : 'Tidak'}
+Maklumat Input Kes Disiplin:
+- WHAT (Jenis & Tahap Kesalahan): ${jenisKes || 'Salah laku disiplin'} [Tahap: ${tahapKesalahan || 'Sederhana'}]
+- WHO (Murid & Pihak Terlibat): ${namaMurid || 'Murid'} [Kelas: ${kelasMurid || 'Tidak dinyatakan'}]
+- WHEN (Tarikh, Masa & Sesi): ${tarikhKes || ''} ${masaKes || ''} [Sesi: ${sesiKejadian || 'Waktu Persekolahan'}]
+- WHERE (Lokasi Kejadian): ${lokasiKejadian || 'Kawasan Sekolah'}
+- WHY (Punca & Motif): ${puncaKejadian || 'Dalam siasatan'}
+- HOW (Tindakan Awal Guru): ${tindakanAwalGuru || 'Nasihat dan amaran lisan'}
+- Laporan Polis / PPS (PDRM): ${isPoliceReport ? `Ya (${balaiPolis || 'Balai Polis'})` : 'Tidak (Tindakan Dalaman Sekolah)'}
 
-Nota Ringkas / Catatan Kes:
+Nota Ringkas / Catatan Suara Pelapor:
 "${inputNotes}"
 
 PERATURAN FORMAT PENULISAN (SANGAT PENTING):
 1. DILARANG sama sekali menggunakan sebarang huruf tebal (bold), asteriks (*), atau simbol markdown bold. Tiada tanda * sama sekali!
 2. DILARANG menggunakan SEMUA HURUF BESAR untuk perenggan kandungan. Perenggan mestilah ditulis dalam huruf kecil biasa (sentence case/standard Malay grammar).
-3. Hanya Tajuk/Sub-tajuk Seksyen SAHAJA yang perlu dimulakan dengan huruf besar bagi setiap perkataan (Capitalize Each Word / Title Case), contohnya "1. Ringkasan Dan Kronologi Peristiwa".
+3. Hanya Tajuk/Sub-tajuk Seksyen SAHAJA yang perlu dimulakan dengan huruf besar bagi setiap perkataan (Capitalize Each Word / Title Case), contohnya "1. Ringkasan Kejadian Dan Kronologi Peristiwa (How)".
 
-Susunan Struktur Laporan:
-1. Ringkasan Dan Kronologi Peristiwa
-(Perenggan menjelaskan latar belakang, lokasi, dan kronologi kejadian secara objektif)
+Susunan Struktur Laporan 5W 1H:
+1. Ringkasan Kejadian Dan Kronologi Peristiwa
+(Perenggan menerangkan bagaimana kejadian dikesan, saksi yang melihat, dan kronologi langkah demi langkah)
 
-2. Impak Dan Kerugian
-(Perenggan menjelaskan kerugian, kerosakan, atau tindakan awal)
+2. Punca Dan Faktor Pendorong (Why)
+(Perenggan menerangkan faktor pendorong, motif, atau punca tingkah laku salah laku tersebut)
 
-3. Cadangan Dan Tindakan Susulan
-(Perenggan menjelaskan tindakan persatuan, rujukan PDRM, dan langkah keselamatan)
+3. Tindakan Awal Dan Langkah Bimbingan Susulan (How)
+(Perenggan menerangkan tindakan serta merta oleh guru pelapor, rujukan kepada Unit Bimbingan & Kaunseling, perjumpaan ibu bapa, serta tindakan tatatertib sekolah)
 
-Bahasa mestilah rasmi, objektif, jelas, dan sesuai untuk rujukan simpanan persatuan serta tindakan PDRM. JANGAN sertakan markdown codeblock atau tanda asteriks (*).`;
+Bahasa mestilah rasmi, objektif, jelas, dan sesuai untuk rekod rasmi Hal Ehwal Murid (HEM) sekolah serta rujukan PPD/JPN. JANGAN sertakan markdown codeblock atau tanda asteriks (*).`;
 
     const { text: rawText, provider, modelUsed } = await generateAIWithGeminiFirstThenOpenRouter({
       prompt,
       geminiConfig: {
-        systemInstruction: "Anda adalah pakar penulisan laporan kes rasmi perumahan dan keselamatan. Tulis tanpa sebarang tanda asteriks atau bold."
+        systemInstruction: "Anda adalah pakar penulisan laporan disiplin sekolah berasaskan prinsip 5W 1H. Tulis tanpa sebarang tanda asteriks atau bold."
       },
-      systemInstruction: "Anda adalah pakar penulisan laporan kes rasmi perumahan dan keselamatan. Tulis tanpa sebarang tanda asteriks atau bold.",
+      systemInstruction: "Anda adalah pakar penulisan laporan disiplin sekolah berasaskan prinsip 5W 1H. Tulis tanpa sebarang tanda asteriks atau bold.",
       isJson: false,
-      logPrefix: 'AI Kes'
+      logPrefix: 'AI Kes Disiplin'
     });
 
     let text = rawText.trim();

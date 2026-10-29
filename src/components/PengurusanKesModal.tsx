@@ -2,12 +2,23 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, getDocs, query, orderBy, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { printCaseReportPdf, JENIS_KES_OPTIONS, isAjkUser, compressAndConvertToBase64 } from '../utils/kesHelper';
+import { 
+  printCaseReportPdf, 
+  KATEGORI_DISIPLIN_OPTIONS, 
+  TAHAP_KESALAHAN_OPTIONS,
+  SESI_WAKTU_OPTIONS,
+  LOKASI_DISIPLIN_OPTIONS,
+  PUNCA_DISIPLIN_OPTIONS,
+  TINDAKAN_AWAL_OPTIONS,
+  isDisiplinAuthorized, 
+  compressAndConvertToBase64 
+} from '../utils/kesHelper';
 import { CaseRecord } from '../types';
 import { 
   X, ShieldAlert, Search, Filter, Printer, FileText, 
   Pencil, Trash2, AlertTriangle, Loader2, Save, CheckCircle2,
-  PenTool, RotateCcw, Check, ChevronDown, Upload, Image as ImageIcon
+  PenTool, RotateCcw, Check, ChevronDown, Upload, Image as ImageIcon,
+  Lock, Calendar, MapPin, Clock, UserCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -54,8 +65,9 @@ function ExpandableText({ text, className = '' }: { text?: string; className?: s
 
 export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: PengurusanKesModalProps) {
   const { currentUserDoc } = useAuth();
+  const isAuthorized = isDisiplinAuthorized(currentUserDoc);
   const isAdminUtama = currentUserDoc?.role === 'Admin Utama' || currentUserDoc?.role === 'ADMIN UTAMA' || currentUserDoc?.isSuperAdmin === true || currentUserDoc?.email?.toLowerCase() === 'g-59129199@moe-dl.edu.my';
-  const canChangeStatus = isAjkUser(currentUserDoc);
+  const canChangeStatus = isAuthorized;
 
   const [cases, setCases] = useState<CaseRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,11 +81,20 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
   // Edit modal state
   const [caseToEdit, setCaseToEdit] = useState<CaseRecord | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const [editPenerimaName, setEditPenerimaName] = useState('');
-  const [editPenerimaHouseNo, setEditPenerimaHouseNo] = useState('');
+  const [editNamaMurid, setEditNamaMurid] = useState('');
+  const [editKelasMurid, setEditKelasMurid] = useState('');
+  const [editNoPelajar, setEditNoPelajar] = useState('');
   const [editTarikhKes, setEditTarikhKes] = useState('');
   const [editMasaKes, setEditMasaKes] = useState('');
+  const [editSesiKejadian, setEditSesiKejadian] = useState('');
   const [editJenisKes, setEditJenisKes] = useState('');
+  const [editTahapKesalahan, setEditTahapKesalahan] = useState<'Ringan' | 'Sederhana' | 'Berat'>('Sederhana');
+  const [editWhatPerincian, setEditWhatPerincian] = useState('');
+  const [editLokasiKejadian, setEditLokasiKejadian] = useState('');
+  const [editLokasiPerincian, setEditLokasiPerincian] = useState('');
+  const [editPuncaKejadian, setEditPuncaKejadian] = useState('');
+  const [editSebabPerincian, setEditSebabPerincian] = useState('');
+  const [editTindakanAwalGuru, setEditTindakanAwalGuru] = useState('');
   const [editStatus, setEditStatus] = useState<CaseRecord['status']>('Dalam Siasatan');
   const [editIsPoliceReport, setEditIsPoliceReport] = useState(false);
   const [editBalaiPolis, setEditBalaiPolis] = useState('');
@@ -163,10 +184,69 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
       setCases(prev => prev.map(c => c.id === statusUpdateCase.id ? { ...c, ...updateData } : c));
       setStatusUpdateCase(null);
     } catch (err: any) {
-      alert(`Gagal menyimpan kemas kini status: ${err.message || 'Ralat'}`);
+      alert(`Gagal mengemaskini status: ${err.message || 'Ralat'}`);
     } finally {
       setIsSavingStatusUpdate(false);
     }
+  };
+
+  const handleStatusBuktiSelesaiUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingStatusSelesai(true);
+    try {
+      const base64 = await compressAndConvertToBase64(file);
+      setStatusBuktiSelesaiUrl(base64);
+    } catch (err) {
+      alert('Gagal memproses gambar penyelesaian.');
+    } finally {
+      setIsUploadingStatusSelesai(false);
+    }
+  };
+
+  // Delete Case (Admin Utama only)
+  const handleDeleteConfirm = async () => {
+    if (!caseToDelete || !isAdminUtama) return;
+    setIsDeleting(true);
+    try {
+      if (db) {
+        await deleteDoc(doc(db, 'cases', caseToDelete.id));
+      }
+      setCases(prev => prev.filter(c => c.id !== caseToDelete.id));
+      setCaseToDelete(null);
+    } catch (err: any) {
+      alert(`Gagal memadam kes: ${err.message || 'Ralat'}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Open Edit Modal
+  const handleOpenEdit = (c: CaseRecord) => {
+    setCaseToEdit(c);
+    setEditNamaMurid(c.namaMurid || c.penerimaName || '');
+    setEditKelasMurid(c.kelasMurid || c.penerimaHouseNo || '');
+    setEditNoPelajar(c.noPelajar || '');
+    setEditTarikhKes(c.tarikhKes);
+    setEditMasaKes(c.masaKes);
+    setEditSesiKejadian(c.sesiKejadian || SESI_WAKTU_OPTIONS[0]);
+    setEditJenisKes(c.jenisKes);
+    setEditTahapKesalahan(c.tahapKesalahan || 'Sederhana');
+    setEditWhatPerincian(c.whatPerincian || '');
+    setEditLokasiKejadian(c.lokasiKejadian || LOKASI_DISIPLIN_OPTIONS[0]);
+    setEditLokasiPerincian(c.lokasiPerincian || '');
+    setEditPuncaKejadian(c.puncaKejadian || PUNCA_DISIPLIN_OPTIONS[0]);
+    setEditSebabPerincian(c.sebabPerincian || '');
+    setEditTindakanAwalGuru(c.tindakanAwalGuru || TINDAKAN_AWAL_OPTIONS[0]);
+    setEditStatus(c.status);
+    setEditIsPoliceReport(c.isPoliceReport);
+    setEditBalaiPolis(c.balaiPolis || '');
+    setEditNoRepotPolis(c.noRepotPolis || '');
+    setEditKeterangan(c.keterangan);
+    setEditBuktiGambarUrl(c.buktiGambarUrl || '');
+    setEditKeteranganSiasatan(c.keteranganSiasatan || '');
+    setEditKeteranganSelesai(c.keteranganSelesai || '');
+    setEditBuktiSelesaiUrl(c.buktiSelesaiUrl || '');
   };
 
   const handleEditBuktiGambarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,60 +271,10 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
       const base64 = await compressAndConvertToBase64(file);
       setEditBuktiSelesaiUrl(base64);
     } catch (err) {
-      alert('Gagal memproses gambar penyelesaian.');
+      alert('Gagal memproses gambar bukti selesai.');
     } finally {
       setIsUploadingEditSelesai(false);
     }
-  };
-
-  const handleStatusBuktiSelesaiUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsUploadingStatusSelesai(true);
-    try {
-      const base64 = await compressAndConvertToBase64(file);
-      setStatusBuktiSelesaiUrl(base64);
-    } catch (err) {
-      alert('Gagal memproses gambar penyelesaian.');
-    } finally {
-      setIsUploadingStatusSelesai(false);
-    }
-  };
-
-  // Handle Delete Confirmation
-  const handleDeleteConfirm = async () => {
-    if (!caseToDelete) return;
-    setIsDeleting(true);
-    try {
-      if (db) {
-        await deleteDoc(doc(db, 'cases', caseToDelete.id));
-      }
-      setCases(prev => prev.filter(c => c.id !== caseToDelete.id));
-      setCaseToDelete(null);
-    } catch (err: any) {
-      alert(`Gagal memadam kes: ${err.message || 'Ralat pelayan'}`);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Open Edit Form
-  const handleOpenEdit = (c: CaseRecord) => {
-    setCaseToEdit(c);
-    setEditPenerimaName(c.penerimaName || '');
-    setEditPenerimaHouseNo(c.penerimaHouseNo || '');
-    setEditTarikhKes(c.tarikhKes || '');
-    setEditMasaKes(c.masaKes || '');
-    setEditJenisKes(c.jenisKes || JENIS_KES_OPTIONS[0]);
-    setEditStatus(c.status || 'Dalam Siasatan');
-    setEditIsPoliceReport(c.isPoliceReport || false);
-    setEditBalaiPolis(c.balaiPolis || '');
-    setEditNoRepotPolis(c.noRepotPolis || '');
-    setEditKeterangan(c.keterangan || '');
-    setEditBuktiGambarUrl(c.buktiGambarUrl || '');
-    setEditKeteranganSiasatan(c.keteranganSiasatan || '');
-    setEditKeteranganSelesai(c.keteranganSelesai || '');
-    setEditBuktiSelesaiUrl(c.buktiSelesaiUrl || '');
   };
 
   // Save Edit Changes
@@ -254,17 +284,30 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
     setIsSavingEdit(true);
 
     try {
-      const updatedData = {
-        penerimaName: editPenerimaName.trim(),
-        penerimaHouseNo: editPenerimaHouseNo.trim(),
+      const updatedData: Partial<CaseRecord> = {
+        // Sync backward compatibility
+        penerimaName: editNamaMurid.trim(),
+        penerimaHouseNo: editKelasMurid.trim(),
+        namaMurid: editNamaMurid.trim(),
+        kelasMurid: editKelasMurid.trim(),
+        noPelajar: editNoPelajar.trim(),
         tarikhKes: editTarikhKes,
         masaKes: editMasaKes,
+        sesiKejadian: editSesiKejadian,
         jenisKes: editJenisKes,
+        tahapKesalahan: editTahapKesalahan,
+        whatPerincian: editWhatPerincian.trim(),
+        lokasiKejadian: editLokasiKejadian,
+        lokasiPerincian: editLokasiPerincian.trim(),
+        puncaKejadian: editPuncaKejadian,
+        sebabPerincian: editSebabPerincian.trim(),
+        tindakanAwalGuru: editTindakanAwalGuru,
         status: editStatus,
         isPoliceReport: editIsPoliceReport,
         balaiPolis: editIsPoliceReport ? editBalaiPolis.trim() : '',
         noRepotPolis: editIsPoliceReport ? editNoRepotPolis.trim() : '',
         keterangan: editKeterangan.trim(),
+        kronologiKejadian: editKeterangan.trim(),
         buktiGambarUrl: editBuktiGambarUrl,
         keteranganSiasatan: editKeteranganSiasatan.trim(),
         keteranganSelesai: editKeteranganSelesai.trim(),
@@ -362,12 +405,16 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
   };
 
   const filteredCases = cases.filter(c => {
+    const q = searchQuery.toLowerCase();
     const matchQuery = 
-      c.caseNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.pengaduName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.penerimaName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.jenisKes.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.penerimaHouseNo.toLowerCase().includes(searchQuery.toLowerCase());
+      c.caseNo.toLowerCase().includes(q) ||
+      (c.namaMurid || c.penerimaName || '').toLowerCase().includes(q) ||
+      (c.kelasMurid || c.penerimaHouseNo || '').toLowerCase().includes(q) ||
+      (c.noPelajar || '').toLowerCase().includes(q) ||
+      (c.jenisKes || '').toLowerCase().includes(q) ||
+      (c.tahapKesalahan || '').toLowerCase().includes(q) ||
+      (c.lokasiKejadian || '').toLowerCase().includes(q) ||
+      (c.pengaduName || '').toLowerCase().includes(q);
 
     if (statusFilter === 'Semua') return matchQuery;
     return matchQuery && c.status === statusFilter;
@@ -385,7 +432,7 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs cursor-pointer"
+            className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs cursor-pointer"
           />
 
           {/* Modal Content */}
@@ -396,42 +443,49 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
             className="relative bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col z-10 max-h-[88vh]"
           >
             {/* Header */}
-            <div className="flex justify-between items-start sm:items-center bg-slate-900 px-4 sm:px-6 py-4 text-white gap-3">
+            <div className="flex justify-between items-start sm:items-center bg-gradient-to-r from-rose-950 via-slate-900 to-rose-950 px-4 sm:px-6 py-4 text-white gap-3">
               <div className="flex items-start gap-3">
                 <div className="p-2 bg-rose-500/20 text-rose-400 rounded-xl border border-rose-500/30 shrink-0">
-                  <ShieldAlert size={20} />
+                  <ShieldAlert size={22} />
                 </div>
                 <div>
-                  <h2 className="font-extrabold text-sm sm:text-base tracking-tight text-white">
-                    Pengurusan Rekod Kes Keselamatan Komuniti
-                  </h2>
-                  <p className="text-[10px] text-slate-400">Arsip Laporan Kes Serius AJK Persatuan PTMF2</p>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-extrabold text-sm sm:text-base tracking-tight text-white">
+                      Pengurusan & Rekod Kes Disiplin (5W 1H)
+                    </h2>
+                    <span className="px-2 py-0.5 bg-rose-600 text-white font-black text-[9px] uppercase tracking-wider rounded">
+                      Admin Utama & Guru
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-300">
+                    Arsip Laporan Salah Laku Murid Sekolah Menengah Agama Ulu Jempol (SMAUJ)
+                  </p>
 
-                  {/* Mobile View Button under subtext */}
-                  <div className="mt-2.5 sm:hidden">
+                  {/* Mobile Register Button */}
+                  <div className="mt-2 sm:hidden">
                     <button
                       onClick={() => {
                         onClose();
                         onOpenRegister();
                       }}
-                      className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl cursor-pointer transition-all shadow-sm flex items-center gap-1.5"
+                      className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-lg cursor-pointer transition-all shadow-sm flex items-center gap-1.5"
                     >
-                      <span>+ Daftarkan Kes Baru</span>
+                      <span>+ Daftarkan Kes Disiplin Baru</span>
                     </button>
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {/* Desktop View Button */}
+                {/* Desktop Register Button */}
                 <button
                   onClick={() => {
                     onClose();
                     onOpenRegister();
                   }}
-                  className="hidden sm:flex px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl cursor-pointer transition-all shadow-sm items-center gap-1.5"
+                  className="hidden sm:flex px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl cursor-pointer transition-all shadow-sm items-center gap-1.5"
                 >
-                  <span>+ Daftarkan Kes Baru</span>
+                  <span>+ Daftarkan Kes Disiplin Baru</span>
                 </button>
 
                 <button 
@@ -452,7 +506,7 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari No. Kes, Nama Pengadu, Jenis Kes, atau No Rumah..."
+                  placeholder="Cari No. Kes, Nama Murid, Kelas, Kategori Kesalahan..."
                   className="w-full bg-white border border-slate-200 text-slate-800 text-xs font-semibold pl-9 pr-3 py-2 rounded-xl focus:ring-2 focus:ring-slate-900 outline-hidden"
                 />
               </div>
@@ -466,6 +520,7 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                 >
                   <option value="Semua">Semua Status</option>
                   <option value="Dalam Siasatan">Dalam Siasatan</option>
+                  <option value="Dirujuk Kaunseling / HEM">Dirujuk Kaunseling / HEM</option>
                   <option value="Dirujuk PDRM">Dirujuk PDRM</option>
                   <option value="Selesai">Selesai</option>
                   <option value="Arsip">Arsip</option>
@@ -476,239 +531,296 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
             {/* Main List */}
             <div className="p-6 overflow-y-auto space-y-4">
               {isLoading ? (
-                <div className="py-12 text-center text-slate-400 text-xs font-medium">
-                  Memuatkan senarai kes...
+                <div className="py-12 text-center text-slate-400 text-xs font-medium flex items-center justify-center gap-2">
+                  <Loader2 size={16} className="animate-spin text-rose-600" />
+                  <span>Memuatkan senarai kes disiplin...</span>
                 </div>
               ) : filteredCases.length === 0 ? (
                 <div className="py-12 text-center space-y-2">
                   <FileText className="mx-auto text-slate-300" size={32} />
-                  <p className="text-xs font-bold text-slate-600">Tiada rekod kes ditemui.</p>
-                  <p className="text-[10px] text-slate-400">Tekan "+ Daftarkan Kes Baru" untuk memasukkan laporan pertama.</p>
+                  <p className="text-xs font-bold text-slate-600">Tiada rekod kes disiplin ditemui.</p>
+                  <p className="text-[10px] text-slate-400">Tekan "+ Daftarkan Kes Disiplin Baru" untuk memasukkan laporan pertama mengikut 5W 1H.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {filteredCases.map((c) => (
-                    <div 
-                      key={c.id}
-                      className="p-4 bg-white border border-slate-200 rounded-xl hover:border-slate-400 transition-all shadow-2xs space-y-3"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-black text-slate-900 px-2.5 py-1 bg-slate-100 rounded-md">
-                            {c.caseNo}
-                          </span>
+                <div className="space-y-4">
+                  {filteredCases.map((c) => {
+                    const studentName = c.namaMurid || c.penerimaName || 'Murid Terlibat';
+                    const studentClass = c.kelasMurid || c.penerimaHouseNo || '-';
+                    const tahap = c.tahapKesalahan || 'Sederhana';
 
-                          {canChangeStatus ? (
-                            <div className="relative inline-flex items-center">
-                              <select
-                                value={c.status}
-                                onChange={(e) => handleUpdateStatus(c.id, e.target.value as any)}
-                                className={`appearance-none cursor-pointer text-[10px] font-black px-2.5 py-1 pr-6 rounded-full uppercase tracking-wider border shadow-2xs transition-all focus:outline-none focus:ring-2 focus:ring-slate-900 ${
-                                  c.status === 'Selesai' ? 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200' :
-                                  c.status === 'Dirujuk PDRM' ? 'bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200' :
-                                  c.status === 'Dalam Siasatan' ? 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200' :
-                                  'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
-                                }`}
-                                title="Klik untuk ubah status kes"
-                              >
-                                <option value="Dalam Siasatan" className="bg-white text-slate-900 font-bold">Dalam Siasatan</option>
-                                <option value="Dirujuk PDRM" className="bg-white text-slate-900 font-bold">Dirujuk PDRM</option>
-                                <option value="Selesai" className="bg-white text-slate-900 font-bold">Selesai</option>
-                                <option value="Arsip" className="bg-white text-slate-900 font-bold">Arsip</option>
-                              </select>
-                              <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-current opacity-70" />
-                            </div>
-                          ) : (
-                            <span className={`px-2.5 py-0.5 text-[10px] font-black rounded-full uppercase ${
-                              c.status === 'Selesai' ? 'bg-emerald-100 text-emerald-800' :
-                              c.status === 'Dirujuk PDRM' ? 'bg-indigo-100 text-indigo-800' :
-                              c.status === 'Dalam Siasatan' ? 'bg-amber-100 text-amber-800' :
-                              'bg-slate-100 text-slate-700'
-                            }`}>
-                              {c.status}
+                    return (
+                      <div 
+                        key={c.id}
+                        className="p-4 bg-white border border-slate-200 rounded-2xl hover:border-slate-400 transition-all shadow-xs space-y-3.5"
+                      >
+                        {/* Header Row */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-xs font-black text-slate-900 px-2.5 py-1 bg-slate-100 rounded-lg border border-slate-200">
+                              {c.caseNo}
                             </span>
-                          )}
+
+                            {/* Tahap Kesalahan Badge */}
+                            <span className={`px-2 py-0.5 text-[9px] font-black rounded-md uppercase border ${
+                              tahap === 'Ringan' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                              tahap === 'Sederhana' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                              'bg-rose-50 text-rose-800 border-rose-200'
+                            }`}>
+                              Tahap: {tahap}
+                            </span>
+
+                            {/* Quick Status Dropdown / Badge */}
+                            {canChangeStatus ? (
+                              <div className="relative inline-flex items-center">
+                                <select
+                                  value={c.status}
+                                  onChange={(e) => handleUpdateStatus(c.id, e.target.value as any)}
+                                  className={`appearance-none cursor-pointer text-[10px] font-black px-2.5 py-1 pr-6 rounded-full uppercase tracking-wider border shadow-2xs transition-all focus:outline-hidden ${
+                                    c.status === 'Selesai' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                                    c.status === 'Dirujuk PDRM' ? 'bg-rose-100 text-rose-800 border-rose-300' :
+                                    c.status === 'Dirujuk Kaunseling / HEM' ? 'bg-indigo-100 text-indigo-800 border-indigo-300' :
+                                    c.status === 'Dalam Siasatan' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                                    'bg-slate-100 text-slate-700 border-slate-300'
+                                  }`}
+                                  title="Klik untuk ubah status kes disiplin"
+                                >
+                                  <option value="Dalam Siasatan">Dalam Siasatan</option>
+                                  <option value="Dirujuk Kaunseling / HEM">Dirujuk Kaunseling / HEM</option>
+                                  <option value="Dirujuk PDRM">Dirujuk PDRM</option>
+                                  <option value="Selesai">Selesai</option>
+                                  <option value="Arsip">Arsip</option>
+                                </select>
+                                <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-current opacity-70" />
+                              </div>
+                            ) : (
+                              <span className={`px-2.5 py-0.5 text-[10px] font-black rounded-full uppercase ${
+                                c.status === 'Selesai' ? 'bg-emerald-100 text-emerald-800' :
+                                c.status === 'Dirujuk PDRM' ? 'bg-rose-100 text-rose-800' :
+                                'bg-slate-100 text-slate-700'
+                              }`}>
+                                {c.status}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-1.5">
+                            {/* Print PDF Button */}
+                            <button
+                              type="button"
+                              onClick={() => printCaseReportPdf(c)}
+                              title="Cetak Laporan Kes Disiplin 5W 1H (A4 Portrait)"
+                              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg cursor-pointer transition-colors shadow-2xs flex items-center gap-1 text-[11px] font-bold"
+                            >
+                              <Printer size={13} />
+                              <span>Cetak PDF</span>
+                            </button>
+
+                            {/* Admin Utama & Guru Edit & Delete */}
+                            {isAdminUtama && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEdit(c)}
+                                  title="Edit Rekod Kes"
+                                  className="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg cursor-pointer transition-colors shadow-2xs"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setCaseToDelete(c)}
+                                  title="Padam Kes"
+                                  className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg cursor-pointer transition-colors shadow-2xs"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Action Row */}
-                        <div className="flex items-center gap-1.5">
-                          {/* Print PDF Button (Icon Only without text) */}
-                          <button
-                            type="button"
-                            onClick={() => printCaseReportPdf(c)}
-                            title="Cetak Laporan Kes (A4 Portrait)"
-                            className="p-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg cursor-pointer transition-colors shadow-2xs"
-                          >
-                            <Printer size={13} />
-                          </button>
+                        {/* 5W 1H Summary Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
+                          <div>
+                            <span className="text-[9px] text-slate-400 font-black uppercase block">WHO (Murid)</span>
+                            <p className="font-extrabold text-slate-900">{studentName}</p>
+                            <span className="text-[10px] text-slate-500 font-medium">Kelas: {studentClass}</span>
+                          </div>
 
-                          {/* Admin Utama Only: Icon-Only Edit & Delete Buttons */}
-                          {isAdminUtama && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenEdit(c)}
-                                title="Edit Kes"
-                                className="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg cursor-pointer transition-colors shadow-2xs"
-                              >
-                                <Pencil size={13} />
-                              </button>
+                          <div>
+                            <span className="text-[9px] text-slate-400 font-black uppercase block">WHAT (Kesalahan)</span>
+                            <p className="font-extrabold text-rose-700 leading-tight">{c.jenisKes}</p>
+                            {c.whatPerincian && (
+                              <p className="text-[10px] text-slate-500 line-clamp-1">{c.whatPerincian}</p>
+                            )}
+                          </div>
 
-                              <button
-                                type="button"
-                                onClick={() => setCaseToDelete(c)}
-                                title="Padam Kes"
-                                className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg cursor-pointer transition-colors shadow-2xs"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </>
-                          )}
+                          <div>
+                            <span className="text-[9px] text-slate-400 font-black uppercase block">WHEN & WHERE</span>
+                            <p className="font-bold text-slate-800 text-[11px]">{c.tarikhKes} ({c.masaKes})</p>
+                            <p className="text-[10px] text-slate-500">{c.lokasiKejadian || 'Sekolah'}</p>
+                          </div>
+
+                          <div>
+                            <span className="text-[9px] text-slate-400 font-black uppercase block">GURU PELAPOR</span>
+                            <p className="font-extrabold text-slate-800">{c.pengaduName}</p>
+                            <span className="text-[9px] px-1.5 py-0.2 bg-indigo-50 text-indigo-800 font-bold rounded">
+                              {c.pengaduRole}
+                            </span>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                        <div>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Pengadu (AJK)</span>
-                          <p className="font-extrabold text-slate-800">{c.pengaduName}</p>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Penerima Kes</span>
-                          <p className="font-extrabold text-slate-800">{c.penerimaName} (No. {c.penerimaHouseNo})</p>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Jenis Kes</span>
-                          <p className="font-extrabold text-rose-700">{c.jenisKes}</p>
-                        </div>
-                      </div>
-
-                      <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-700 font-normal leading-relaxed space-y-2">
-                        <ExpandableText text={c.keterangan} />
-
-                        {c.buktiGambarUrl && (
-                          <div className="pt-2 border-t border-slate-200/60 flex items-center gap-2.5">
-                            <img 
-                              src={c.buktiGambarUrl} 
-                              alt="Bukti Kejadian" 
-                              className="h-16 w-24 object-cover rounded-lg border border-slate-200 shrink-0 cursor-pointer hover:opacity-90"
-                              onClick={() => window.open(c.buktiGambarUrl, '_blank')}
-                              title="Klik untuk lihat gambar penuh"
-                            />
-                            <div>
-                              <span className="text-[10px] font-black text-slate-600 uppercase block">Gambar Bukti Kejadian</span>
-                              <span className="text-[10px] text-slate-400">Dimuat naik semasa pendaftaran kes</span>
+                        {/* WHY & HOW Preview */}
+                        <div className="space-y-2 text-xs">
+                          {c.puncaKejadian && (
+                            <div className="flex items-center gap-1.5 text-[11px] text-purple-900 bg-purple-50 p-2 rounded-lg border border-purple-100">
+                              <span className="font-black shrink-0">WHY (Punca):</span>
+                              <span>{c.puncaKejadian}{c.sebabPerincian ? ` — ${c.sebabPerincian}` : ''}</span>
                             </div>
+                          )}
+
+                          {c.tindakanAwalGuru && (
+                            <div className="flex items-center gap-1.5 text-[11px] text-indigo-900 bg-indigo-50 p-2 rounded-lg border border-indigo-100">
+                              <span className="font-black shrink-0">HOW (Tindakan Awal):</span>
+                              <span>{c.tindakanAwalGuru}</span>
+                            </div>
+                          )}
+
+                          {/* Kronologi Penuh */}
+                          <div className="p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-normal leading-relaxed space-y-2">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
+                              HOW — Kronologi Kejadian:
+                            </span>
+                            <ExpandableText text={c.kronologiKejadian || c.keterangan} />
+
+                            {c.buktiGambarUrl && (
+                              <div className="pt-2 border-t border-slate-200/60 flex items-center gap-2.5">
+                                <img 
+                                  src={c.buktiGambarUrl} 
+                                  alt="Bukti Kejadian" 
+                                  className="h-16 w-24 object-contain rounded-lg border border-slate-200 shrink-0 cursor-pointer hover:opacity-90 bg-slate-50"
+                                  onClick={() => window.open(c.buktiGambarUrl, '_blank')}
+                                  title="Klik untuk lihat gambar penuh"
+                                />
+                                <div>
+                                  <span className="text-[10px] font-black text-slate-700 uppercase block">Gambar Bukti / Rampasan</span>
+                                  <span className="text-[10px] text-slate-400">Dimuat naik semasa pendaftaran kes</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Status Siasatan Update Note */}
+                        {(c.status === 'Dalam Siasatan' || c.keteranganSiasatan) && (
+                          <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-black text-amber-900 uppercase tracking-wider flex items-center gap-1">
+                                ⚡ Catatan Siasatan Disiplin / Kaunselor
+                              </span>
+                              {canChangeStatus && (
+                                <button
+                                  type="button"
+                                  onClick={() => openStatusUpdateModal(c, 'Dalam Siasatan')}
+                                  className="text-[10px] font-bold text-amber-800 hover:underline cursor-pointer"
+                                >
+                                  Kemaskini Siasatan
+                                </button>
+                              )}
+                            </div>
+                            {c.keteranganSiasatan ? (
+                              <ExpandableText text={c.keteranganSiasatan} />
+                            ) : (
+                              <p className="italic text-amber-700/60 font-normal text-xs">Tiada catatan siasatan dimasukkan lagi.</p>
+                            )}
                           </div>
                         )}
-                      </div>
 
-                      {/* Keterangan Semasa Siasatan (Jika status Dalam Siasatan atau wujud rekod) */}
-                      {(c.status === 'Dalam Siasatan' || c.keteranganSiasatan) && (
-                        <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1 text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black text-amber-900 uppercase tracking-wider flex items-center gap-1">
-                              ⚡ Keterangan Semasa Siasatan
-                            </span>
-                            {canChangeStatus && (
-                              <button
-                                type="button"
-                                onClick={() => openStatusUpdateModal(c, 'Dalam Siasatan')}
-                                className="text-[10px] font-bold text-amber-800 hover:underline cursor-pointer"
-                              >
-                                Kemaskini Siasatan
-                              </button>
-                            )}
-                          </div>
-                          {c.keteranganSiasatan ? (
-                            <ExpandableText text={c.keteranganSiasatan} />
-                          ) : (
-                            <p className="italic text-amber-700/60 font-normal text-xs">Tiada keterangan siasatan dimasukkan lagi.</p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Keterangan & Bukti Selepas Selesai Siasatan (Jika status Selesai atau wujud rekod) */}
-                      {(c.status === 'Selesai' || c.keteranganSelesai || c.buktiSelesaiUrl) && (
-                        <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-2 text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black text-emerald-900 uppercase tracking-wider flex items-center gap-1">
-                              ✅ Keterangan Selepas Selesai Siasatan
-                            </span>
-                            {canChangeStatus && (
-                              <button
-                                type="button"
-                                onClick={() => openStatusUpdateModal(c, 'Selesai')}
-                                className="text-[10px] font-bold text-emerald-800 hover:underline cursor-pointer"
-                              >
-                                Kemaskini Selesai
-                              </button>
-                            )}
-                          </div>
-                          {c.keteranganSelesai ? (
-                            <ExpandableText text={c.keteranganSelesai} />
-                          ) : (
-                            <p className="italic text-emerald-700/60 text-[11px]">Tiada keterangan penyelesaian dimasukkan lagi.</p>
-                          )}
-                          {c.buktiSelesaiUrl && (
-                            <div className="flex items-center gap-2.5 pt-2 border-t border-emerald-200/60">
-                              <img 
-                                src={c.buktiSelesaiUrl} 
-                                alt="Bukti Selesai" 
-                                className="h-16 w-24 object-cover rounded-lg border border-emerald-300 shrink-0 cursor-pointer hover:opacity-90"
-                                onClick={() => window.open(c.buktiSelesaiUrl, '_blank')}
-                                title="Klik untuk lihat gambar penuh"
-                              />
-                              <div>
-                                <span className="text-[10px] font-black text-emerald-900 uppercase block">Gambar / Bukti Penyelesaian</span>
-                                <span className="text-[10px] text-emerald-700">Lampiran bukti selepas selesai siasatan</span>
-                              </div>
+                        {/* Status Selesai Note */}
+                        {(c.status === 'Selesai' || c.keteranganSelesai || c.buktiSelesaiUrl) && (
+                          <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-2 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-black text-emerald-900 uppercase tracking-wider flex items-center gap-1">
+                                ✅ Keterangan Penyelesaian & Tindakan Bimbingan
+                              </span>
+                              {canChangeStatus && (
+                                <button
+                                  type="button"
+                                  onClick={() => openStatusUpdateModal(c, 'Selesai')}
+                                  className="text-[10px] font-bold text-emerald-800 hover:underline cursor-pointer"
+                                >
+                                  Kemaskini Selesai
+                                </button>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      )}
+                            {c.keteranganSelesai ? (
+                              <ExpandableText text={c.keteranganSelesai} />
+                            ) : (
+                              <p className="italic text-emerald-700/60 text-[11px]">Tiada catatan penyelesaian dimasukkan lagi.</p>
+                            )}
+                            {c.buktiSelesaiUrl && (
+                              <div className="flex items-center gap-2.5 pt-2 border-t border-emerald-200/60">
+                                <img 
+                                  src={c.buktiSelesaiUrl} 
+                                  alt="Bukti Selesai" 
+                                  className="h-16 w-24 object-contain rounded-lg border border-emerald-300 shrink-0 cursor-pointer hover:opacity-90 bg-white"
+                                  onClick={() => window.open(c.buktiSelesaiUrl, '_blank')}
+                                  title="Klik untuk lihat gambar penuh"
+                                />
+                                <div>
+                                  <span className="text-[10px] font-black text-emerald-900 uppercase block">Surat Aku Janji / Bukti Selesai</span>
+                                  <span className="text-[10px] text-emerald-700">Lampiran rekod penyelesaian kes</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
-                      {/* Direct Signature Action Bar */}
-                      <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {/* Signature Pengadu Button */}
-                          <button
-                            type="button"
-                            onClick={() => openSignatureModal(c, 'pengadu')}
-                            className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
-                              c.pengaduSignatureUrl 
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' 
-                                : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                            }`}
-                          >
-                            <PenTool size={12} className={c.pengaduSignatureUrl ? 'text-emerald-600' : 'text-slate-500'} />
-                            <span>
-                              {c.pengaduSignatureUrl ? '✓ T.Tangan Pengadu' : '+ T.Tangan Pengadu'}
-                            </span>
-                          </button>
+                        {/* Signatures & Footer Bar */}
+                        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* Guru Pelapor Signature Button */}
+                            <button
+                              type="button"
+                              onClick={() => openSignatureModal(c, 'pengadu')}
+                              className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
+                                c.pengaduSignatureUrl 
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' 
+                                  : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                              }`}
+                            >
+                              <PenTool size={12} className={c.pengaduSignatureUrl ? 'text-emerald-600' : 'text-slate-500'} />
+                              <span>
+                                {c.pengaduSignatureUrl ? '✓ T.Tangan Guru' : '+ T.Tangan Guru'}
+                              </span>
+                            </button>
 
-                          {/* Signature Penerima Button */}
-                          <button
-                            type="button"
-                            onClick={() => openSignatureModal(c, 'penerima')}
-                            className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
-                              c.penerimaSignatureUrl 
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' 
-                                : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                            }`}
-                          >
-                            <PenTool size={12} className={c.penerimaSignatureUrl ? 'text-emerald-600' : 'text-slate-500'} />
-                            <span>
-                              {c.penerimaSignatureUrl ? '✓ T.Tangan Penerima' : '+ T.Tangan Penerima'}
-                            </span>
-                          </button>
-                        </div>
+                            {/* Murid / Saksi Signature Button */}
+                            <button
+                              type="button"
+                              onClick={() => openSignatureModal(c, 'penerima')}
+                              className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
+                                c.penerimaSignatureUrl 
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' 
+                                  : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                              }`}
+                            >
+                              <PenTool size={12} className={c.penerimaSignatureUrl ? 'text-emerald-600' : 'text-slate-500'} />
+                              <span>
+                                {c.penerimaSignatureUrl ? '✓ T.Tangan Murid/Saksi' : '+ T.Tangan Murid/Saksi'}
+                              </span>
+                            </button>
+                          </div>
 
-                        <div className="text-[10px] text-slate-400 font-medium">
-                          Tarikh Kes: {c.tarikhKes} ({c.masaKes})
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            Tarikh Rekod: {new Date(c.createdAt).toLocaleDateString('ms-MY')}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -739,10 +851,10 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                   <PenTool size={18} className="text-rose-600" />
                   <div>
                     <h3 className="font-extrabold text-sm text-slate-900">
-                      Tandatangan {signTarget.type === 'pengadu' ? 'Pengadu (AJK)' : 'Penerima Kes'}
+                      Tandatangan {signTarget.type === 'pengadu' ? 'Guru Pelapor' : 'Murid / Saksi Kejadian'}
                     </h3>
                     <p className="text-[10px] text-slate-500">
-                      Penandatangan: <strong>{signTarget.type === 'pengadu' ? signTarget.caseItem.pengaduName : (signTarget.caseItem.penerimaName || 'Penerima')}</strong>
+                      Penandatangan: <strong>{signTarget.type === 'pengadu' ? signTarget.caseItem.pengaduName : (signTarget.caseItem.namaMurid || signTarget.caseItem.penerimaName || 'Murid')}</strong>
                     </p>
                   </div>
                 </div>
@@ -831,7 +943,7 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
               </div>
 
               <div className="space-y-1">
-                <h3 className="text-base font-black text-slate-800">Pengesahan Padam Rekod Kes</h3>
+                <h3 className="text-base font-black text-slate-800">Pengesahan Padam Rekod Kes Disiplin</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   Adakah anda pasti mahu memadam rekod kes <strong className="text-slate-900">{caseToDelete.caseNo}</strong> ({caseToDelete.jenisKes}) ini secara kekal?
                 </p>
@@ -880,13 +992,13 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
-              className="relative bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col z-10 my-auto"
+              className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col z-10 my-auto"
             >
               <div className="flex justify-between items-center bg-slate-900 px-5 py-3.5 text-white">
                 <div className="flex items-center gap-2">
                   <Pencil size={16} className="text-amber-400" />
                   <h3 className="font-extrabold text-sm text-white">
-                    Edit Rekod Kes: {caseToEdit.caseNo}
+                    Edit Rekod Kes Disiplin: {caseToEdit.caseNo}
                   </h3>
                 </div>
                 <button 
@@ -897,24 +1009,24 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                 </button>
               </div>
 
-              <form onSubmit={handleSaveEdit} className="p-5 space-y-3.5 overflow-y-auto max-h-[75vh]">
+              <form onSubmit={handleSaveEdit} className="p-5 space-y-4 overflow-y-auto max-h-[78vh]">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-600 uppercase">Nama Penerima Kes</label>
+                    <label className="text-[10px] font-bold text-slate-600 uppercase">Nama Murid</label>
                     <input 
                       type="text"
-                      value={editPenerimaName}
-                      onChange={(e) => setEditPenerimaName(e.target.value)}
+                      value={editNamaMurid}
+                      onChange={(e) => setEditNamaMurid(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs px-3 py-2 rounded-xl focus:ring-2 focus:ring-slate-900 outline-hidden"
                       required
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-600 uppercase">No. Rumah</label>
+                    <label className="text-[10px] font-bold text-slate-600 uppercase">Kelas / Tingkatan</label>
                     <input 
                       type="text"
-                      value={editPenerimaHouseNo}
-                      onChange={(e) => setEditPenerimaHouseNo(e.target.value)}
+                      value={editKelasMurid}
+                      onChange={(e) => setEditKelasMurid(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs px-3 py-2 rounded-xl focus:ring-2 focus:ring-slate-900 outline-hidden"
                       required
                     />
@@ -943,13 +1055,42 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                     />
                   </div>
                   <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-600 uppercase">Tahap Kesalahan</label>
+                    <select
+                      value={editTahapKesalahan}
+                      onChange={(e) => setEditTahapKesalahan(e.target.value as any)}
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs px-2.5 py-2 rounded-xl focus:ring-2 focus:ring-slate-900 outline-hidden"
+                    >
+                      {TAHAP_KESALAHAN_OPTIONS.map(lvl => (
+                        <option key={lvl} value={lvl}>{lvl}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-600 uppercase">Kategori Kesalahan Disiplin</label>
+                    <select
+                      value={editJenisKes}
+                      onChange={(e) => setEditJenisKes(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs px-3 py-2 rounded-xl focus:ring-2 focus:ring-slate-900 outline-hidden cursor-pointer"
+                    >
+                      {KATEGORI_DISIPLIN_OPTIONS.map((opt, i) => (
+                        <option key={i} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-600 uppercase">Status Kes</label>
                     <select
                       value={editStatus}
                       onChange={(e) => setEditStatus(e.target.value as any)}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs px-2 py-2 rounded-xl focus:ring-2 focus:ring-slate-900 outline-hidden cursor-pointer"
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs px-3 py-2 rounded-xl focus:ring-2 focus:ring-slate-900 outline-hidden cursor-pointer"
                     >
                       <option value="Dalam Siasatan">Dalam Siasatan</option>
+                      <option value="Dirujuk Kaunseling / HEM">Dirujuk Kaunseling / HEM</option>
                       <option value="Dirujuk PDRM">Dirujuk PDRM</option>
                       <option value="Selesai">Selesai</option>
                       <option value="Arsip">Arsip</option>
@@ -957,59 +1098,36 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-600 uppercase">Jenis Kes</label>
-                  <select
-                    value={editJenisKes}
-                    onChange={(e) => setEditJenisKes(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs px-3 py-2 rounded-xl focus:ring-2 focus:ring-slate-900 outline-hidden cursor-pointer"
-                  >
-                    {JENIS_KES_OPTIONS.map((opt, i) => (
-                      <option key={i} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-700 uppercase">Laporan PDRM</span>
-                    <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-700">
-                      <input 
-                        type="checkbox"
-                        checked={editIsPoliceReport}
-                        onChange={(e) => setEditIsPoliceReport(e.target.checked)}
-                        className="rounded text-slate-900 focus:ring-slate-900"
-                      />
-                      <span>Ya, Dilaporkan ke Polis</span>
-                    </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-600 uppercase">Lokasi Kejadian</label>
+                    <select
+                      value={editLokasiKejadian}
+                      onChange={(e) => setEditLokasiKejadian(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs px-3 py-2 rounded-xl focus:ring-2 focus:ring-slate-900 outline-hidden"
+                    >
+                      {LOKASI_DISIPLIN_OPTIONS.map((opt, i) => (
+                        <option key={i} value={opt}>{opt}</option>
+                      ))}
+                    </select>
                   </div>
 
-                  {editIsPoliceReport && (
-                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200">
-                      <div>
-                        <input 
-                          type="text"
-                          value={editBalaiPolis}
-                          onChange={(e) => setEditBalaiPolis(e.target.value)}
-                          placeholder="Nama Balai Polis"
-                          className="w-full bg-white border border-slate-200 text-xs px-2.5 py-1.5 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <input 
-                          type="text"
-                          value={editNoRepotPolis}
-                          onChange={(e) => setEditNoRepotPolis(e.target.value)}
-                          placeholder="No. Repot Polis"
-                          className="w-full bg-white border border-slate-200 text-xs px-2.5 py-1.5 rounded-lg"
-                        />
-                      </div>
-                    </div>
-                  )}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-600 uppercase">Punca Kesalahan</label>
+                    <select
+                      value={editPuncaKejadian}
+                      onChange={(e) => setEditPuncaKejadian(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs px-3 py-2 rounded-xl focus:ring-2 focus:ring-slate-900 outline-hidden"
+                    >
+                      {PUNCA_DISIPLIN_OPTIONS.map((opt, i) => (
+                        <option key={i} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-600 uppercase">Keterangan Kes</label>
+                  <label className="text-[10px] font-bold text-slate-600 uppercase">Kronologi Kejadian (HOW)</label>
                   <textarea
                     rows={4}
                     value={editKeterangan}
@@ -1019,87 +1137,7 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                   />
                 </div>
 
-                {/* Gambar Bukti Kejadian (Optional) */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-600 uppercase">Gambar Bukti Kejadian (Not required)</label>
-                  {editBuktiGambarUrl ? (
-                    <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 p-2 flex items-center justify-between">
-                      <img src={editBuktiGambarUrl} alt="Bukti Kejadian" className="h-16 w-24 object-cover rounded-lg border border-slate-200" />
-                      <button
-                        type="button"
-                        onClick={() => setEditBuktiGambarUrl('')}
-                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 size={14} /> Padam Gambar
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-slate-200 hover:border-slate-400 rounded-xl bg-slate-50 cursor-pointer text-slate-500 hover:text-slate-700 transition-all">
-                      <Upload size={18} className="text-slate-400 mb-1" />
-                      <span className="text-[11px] font-bold">{isUploadingEditBukti ? 'Memproses gambar...' : 'Muat Naik Gambar Bukti'}</span>
-                      <input type="file" accept="image/*" onChange={handleEditBuktiGambarUpload} className="hidden" disabled={isUploadingEditBukti} />
-                    </label>
-                  )}
-                </div>
-
-                {/* Status Siasatan Text Areas */}
-                {editStatus === 'Dalam Siasatan' && (
-                  <div className="space-y-1.5 p-3 bg-amber-50/80 border border-amber-200 rounded-xl">
-                    <label className="text-[10px] font-black text-amber-900 uppercase block">
-                      Keterangan Semasa Siasatan
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={editKeteranganSiasatan}
-                      onChange={(e) => setEditKeteranganSiasatan(e.target.value)}
-                      placeholder="Keterangan perkembangan siasatan oleh AJK..."
-                      className="w-full bg-white border border-amber-200 text-slate-800 font-medium text-xs p-2.5 rounded-lg focus:ring-2 focus:ring-amber-500 outline-hidden leading-relaxed resize-none"
-                    />
-                  </div>
-                )}
-
-                {editStatus === 'Selesai' && (
-                  <div className="space-y-3 p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-emerald-900 uppercase block">
-                        Keterangan Selepas Selesai Siasatan
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={editKeteranganSelesai}
-                        onChange={(e) => setEditKeteranganSelesai(e.target.value)}
-                        placeholder="Keterangan rumusan selepas kes diselesaikan..."
-                        className="w-full bg-white border border-emerald-200 text-slate-800 font-medium text-xs p-2.5 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-hidden leading-relaxed resize-none"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-emerald-900 uppercase block">
-                        Gambar Selepas Selesai Siasatan / Bukti Penyelesaian (Not required)
-                      </label>
-                      {editBuktiSelesaiUrl ? (
-                        <div className="relative rounded-xl overflow-hidden border border-emerald-200 bg-white p-2 flex items-center justify-between">
-                          <img src={editBuktiSelesaiUrl} alt="Bukti Selesai" className="h-16 w-24 object-cover rounded-lg border" />
-                          <button
-                            type="button"
-                            onClick={() => setEditBuktiSelesaiUrl('')}
-                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
-                          >
-                            <Trash2 size={14} /> Padam Gambar
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-emerald-300 hover:border-emerald-500 rounded-xl bg-white cursor-pointer text-emerald-700 transition-all">
-                          <Upload size={18} className="text-emerald-500 mb-1" />
-                          <span className="text-[11px] font-bold">{isUploadingEditSelesai ? 'Memproses gambar...' : 'Muat Naik Gambar Bukti Penyelesaian'}</span>
-                          <input type="file" accept="image/*" onChange={handleEditBuktiSelesaiUpload} className="hidden" disabled={isUploadingEditSelesai} />
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-2 pt-2 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setCaseToEdit(null)}
@@ -1146,7 +1184,7 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                   <ShieldAlert size={16} className="text-rose-400" />
                   <div>
                     <h3 className="font-extrabold text-sm text-white">
-                      Kemaskini Status & Siasatan Kes
+                      Kemaskini Tindakan & Siasatan Kes Disiplin
                     </h3>
                     <p className="text-[10px] text-slate-400">No. Kes: {statusUpdateCase.caseNo}</p>
                   </div>
@@ -1168,6 +1206,7 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                     className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-extrabold text-xs px-3 py-2.5 rounded-xl focus:ring-2 focus:ring-slate-900 outline-hidden cursor-pointer"
                   >
                     <option value="Dalam Siasatan">Dalam Siasatan</option>
+                    <option value="Dirujuk Kaunseling / HEM">Dirujuk Kaunseling / HEM</option>
                     <option value="Dirujuk PDRM">Dirujuk PDRM</option>
                     <option value="Selesai">Selesai</option>
                     <option value="Arsip">Arsip</option>
@@ -1177,13 +1216,13 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                 {targetStatus === 'Dalam Siasatan' && (
                   <div className="space-y-1.5 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                     <label className="text-[10px] font-black text-amber-900 uppercase block">
-                      Keterangan Semasa Siasatan
+                      Catatan Perkembangan Siasatan Guru Disiplin / HEM
                     </label>
                     <textarea
                       rows={4}
                       value={statusKeteranganSiasatan}
                       onChange={(e) => setStatusKeteranganSiasatan(e.target.value)}
-                      placeholder="Masukkan perincian tindakan dan perkembangan siasatan oleh AJK..."
+                      placeholder="Masukkan perincian tindakan dan perkembangan siasatan tatatertib..."
                       className="w-full bg-white border border-amber-200 text-slate-800 font-medium text-xs p-3 rounded-lg focus:ring-2 focus:ring-amber-500 outline-hidden leading-relaxed resize-none"
                     />
                   </div>
@@ -1193,24 +1232,24 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                   <div className="space-y-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-emerald-900 uppercase block">
-                        Keterangan Selepas Selesai Siasatan
+                        Keterangan Penyelesaian & Tindakan Bimbingan Kaunseling
                       </label>
                       <textarea
                         rows={4}
                         value={statusKeteranganSelesai}
                         onChange={(e) => setStatusKeteranganSelesai(e.target.value)}
-                        placeholder="Masukkan rumusan dan penjelasan selepas kes diselesaikan..."
+                        placeholder="Masukkan rumusan tindakan tatatertib, sesi kaunseling, atau perjumpaan ibu bapa..."
                         className="w-full bg-white border border-emerald-200 text-slate-800 font-medium text-xs p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-hidden leading-relaxed resize-none"
                       />
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-emerald-900 uppercase block">
-                        Gambar Selepas Selesai Siasatan / Bukti Penyelesaian (Not required)
+                        Gambar Selepas Selesai / Surat Aku Janji (Pilihan)
                       </label>
                       {statusBuktiSelesaiUrl ? (
                         <div className="relative rounded-xl overflow-hidden border border-emerald-200 bg-white p-2 flex items-center justify-between">
-                          <img src={statusBuktiSelesaiUrl} alt="Bukti Selesai" className="h-16 w-24 object-cover rounded-lg border" />
+                          <img src={statusBuktiSelesaiUrl} alt="Bukti Selesai" className="h-16 w-24 object-contain rounded-lg border" />
                           <button
                             type="button"
                             onClick={() => setStatusBuktiSelesaiUrl('')}
@@ -1222,7 +1261,7 @@ export default function PengurusanKesModal({ isOpen, onClose, onOpenRegister }: 
                       ) : (
                         <label className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-emerald-300 hover:border-emerald-500 rounded-xl bg-white cursor-pointer text-emerald-700 transition-all">
                           <Upload size={18} className="text-emerald-500 mb-1" />
-                          <span className="text-[11px] font-bold">{isUploadingStatusSelesai ? 'Memproses gambar...' : 'Muat Naik Gambar Bukti Penyelesaian'}</span>
+                          <span className="text-[11px] font-bold">{isUploadingStatusSelesai ? 'Memproses gambar...' : 'Muat Naik Surat Aku Janji / Bukti Penyelesaian'}</span>
                           <input type="file" accept="image/*" onChange={handleStatusBuktiSelesaiUpload} className="hidden" disabled={isUploadingStatusSelesai} />
                         </label>
                       )}

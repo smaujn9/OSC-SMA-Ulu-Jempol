@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { isAjkUser } from '../utils/kesHelper';
+import { isDisiplinAuthorized } from '../utils/kesHelper';
 import LaporkanKesModal from './LaporkanKesModal';
 import PengurusanKesModal from './PengurusanKesModal';
 import { ShieldAlert, ChevronRight, Lock, X, FileText, ShieldCheck, LogIn, AlertCircle } from 'lucide-react';
@@ -20,7 +20,7 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
     firebaseUser.email
   );
 
-  const userIsAjk = isAjkUser(currentUserDoc);
+  const isAuthorized = isDisiplinAuthorized(currentUserDoc);
 
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isManagementOpen, setIsManagementOpen] = useState(false);
@@ -39,14 +39,14 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
       return;
     }
 
-    // 2. Check if user is an AJK member
-    if (!userIsAjk) {
+    // 2. Check if user is Admin Utama or Guru
+    if (!isAuthorized) {
       setShowAccessDeniedModal(true);
       setShowGoogleGoogleLoginModal(false);
       return;
     }
 
-    // 3. User is Google-logged-in & AJK
+    // 3. User is Google-logged-in & Authorized (Admin Utama / Guru)
     setShowGoogleGoogleLoginModal(false);
     setShowAccessDeniedModal(false);
     if (action === 'register') {
@@ -54,7 +54,7 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
     } else {
       setIsManagementOpen(true);
     }
-  }, [isGoogleLoggedIn, userIsAjk]);
+  }, [isGoogleLoggedIn, isAuthorized]);
 
   // Resume pending action after Google Login completes
   useEffect(() => {
@@ -63,14 +63,14 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
       setPendingKesAction(null);
       setShowGoogleGoogleLoginModal(false);
 
-      if (userIsAjk) {
+      if (isAuthorized) {
         if (action === 'register') setIsRegisterOpen(true);
         if (action === 'management') setIsManagementOpen(true);
       } else {
         setShowAccessDeniedModal(true);
       }
     }
-  }, [isGoogleLoggedIn, pendingKesAction, userIsAjk]);
+  }, [isGoogleLoggedIn, pendingKesAction, isAuthorized]);
 
   // Check URL paths and query params for Redirects & Direct Links
   const checkUrlForKesRoute = useCallback(() => {
@@ -85,9 +85,13 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
       path === '/lapor-kes' || 
       path === '/pendaftaran-kes' || 
       path === '/daftar-kes' || 
+      path === '/lapor-disiplin' ||
+      path === '/kes-disiplin' ||
       actionParam === 'lapor-kes' || 
       actionParam === 'pendaftaran-kes' || 
       actionParam === 'lapor' || 
+      actionParam === 'lapor-disiplin' ||
+      actionParam === 'disiplin' ||
       actionParam === 'register';
 
     // Management/History routes/params
@@ -96,10 +100,14 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
       path === '/sejarah-kes' || 
       path === '/rekod-kes' || 
       path === '/senarai-kes' || 
+      path === '/rekod-disiplin' ||
+      path === '/pengurusan-disiplin' ||
       path === '/kes' || 
       actionParam === 'pengurusan-kes' || 
       actionParam === 'sejarah-kes' || 
       actionParam === 'rekod-kes' || 
+      actionParam === 'pengurusan-disiplin' || 
+      actionParam === 'rekod-disiplin' || 
       actionParam === 'pengurusan' || 
       actionParam === 'management';
 
@@ -163,9 +171,9 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
           <div className="space-y-1.5 text-white pr-8">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 bg-rose-600 text-white font-black text-[9px] uppercase tracking-wider rounded">
-                Khusus AJK
+                Khusus Admin Utama & Guru
               </span>
-              {(!isGoogleLoggedIn || !userIsAjk) && (
+              {(!isGoogleLoggedIn || !isAuthorized) && (
                 <span className="px-2 py-0.5 bg-slate-800 text-slate-300 font-bold text-[9px] rounded flex items-center gap-1 border border-slate-700">
                   <Lock size={10} />
                   <span>Akses Terhad</span>
@@ -174,21 +182,21 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
             </div>
 
             <h3 className={`font-black ${isMobile ? 'text-sm' : 'text-lg'} flex items-center gap-2 text-white`}>
-              <span>Laporkan Kes Komuniti</span>
+              <span>Laporkan Kes Disiplin</span>
               <ChevronRight size={isMobile ? 16 : 18} className="group-hover:translate-x-1 transition-transform text-rose-400" />
             </h3>
 
             <p className={`${isMobile ? 'text-[10px]' : 'text-xs'} font-medium text-rose-100/90 leading-relaxed max-w-xl`}>
-              Borang khas pendaftaran kes serius oleh Ahli Jawatankuasa (AJK) untuk simpanan persatuan & rujukan rasmi pihak berkuasa (PDRM).
+              Borang khas pendaftaran rekod salah laku & kes disiplin murid berasaskan prinsip 5W 1H oleh Guru dan Admin Utama untuk siasatan serta tindakan tatatertib sekolah.
             </p>
           </div>
 
-          {/* Action Row for AJK */}
-          {isGoogleLoggedIn && userIsAjk && (
+          {/* Action Row for Authorized Staff (Admin Utama & Guru) */}
+          {isGoogleLoggedIn && isAuthorized && (
             <div className="pt-3 flex items-center justify-between border-t border-rose-900/40 mt-3 text-[10px] sm:text-xs">
               <span className="text-rose-200/80 font-bold flex items-center gap-1">
                 <ShieldCheck size={14} className="text-emerald-400" />
-                <span>Status: Anda dibenarkan mendaftar kes</span>
+                <span>Status: Anda dibenarkan mendaftar kes disiplin</span>
               </span>
 
               <button
@@ -200,7 +208,7 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
                 className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white font-extrabold rounded-lg backdrop-blur-xs transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <FileText size={12} />
-                <span>Arsip Kes ({currentUserDoc?.role})</span>
+                <span>Arkib & Rekod Kes ({currentUserDoc?.role || 'Guru'})</span>
               </button>
             </div>
           )}
@@ -262,19 +270,19 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
                     Log Masuk Google Diperlukan
                   </h3>
                   <p className="text-xs text-slate-600 leading-relaxed px-2">
-                    Akses ke <b>Borang & Pengurusan Kes Komuniti</b> memerlukan anda log masuk menggunakan <b>Akaun Google</b> terlebih dahulu untuk pengesahan identiti dan kelayakan peranan AJK Persatuan.
+                    Akses ke <b>Borang & Pengurusan Kes Disiplin</b> memerlukan anda log masuk menggunakan <b>Akaun Google</b> terlebih dahulu untuk pengesahan peranan <b>Admin Utama</b> atau <b>Guru</b>.
                   </p>
                 </div>
 
                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-left text-xs space-y-2 text-slate-700">
                   <div className="flex items-center gap-2 font-bold text-slate-800">
                     <ShieldAlert size={15} className="text-rose-500 shrink-0" />
-                    <span>Langkah Pengesahan Syarat Akses:</span>
+                    <span>Syarat Kelayakan Akses Kes Disiplin:</span>
                   </div>
                   <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-600 font-medium pl-1">
-                    <li>Log masuk akaun Google rasmi anda.</li>
-                    <li>Sistem mengesahkan peranan AJK anda dalam pangkalan data persatuan.</li>
-                    <li>Borang / Rekod Kes dibuka secara automatik.</li>
+                    <li>Log masuk menggunakan akaun rasmi anda.</li>
+                    <li>Sistem mengesahkan peranan anda sebagai <b>Admin Utama</b> atau <b>Guru</b>.</li>
+                    <li>Borang Laporan Disiplin (5W 1H) dibuka untuk pengisian.</li>
                   </ol>
                 </div>
 
@@ -303,7 +311,7 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
         )}
       </AnimatePresence>
 
-      {/* 2. Access Denied Modal for Non-AJK Users */}
+      {/* 2. Access Denied Modal for Non-Authorized Users */}
       <AnimatePresence>
         {showAccessDeniedModal && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -326,20 +334,20 @@ export default function BannerLaporkanKes({ isMobile = false }: BannerLaporkanKe
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-base font-black text-slate-800">Akses Ditolak: Khusus AJK Persatuan</h3>
+                <h3 className="text-base font-black text-slate-800">Akses Ditolak: Khusus Admin Utama & Guru</h3>
                 
                 {firebaseUser?.email && (
                   <div className="inline-block px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-[11px] font-mono font-bold border border-slate-200">
-                    Akaun: {firebaseUser.email}
+                    Akaun: {firebaseUser.email} {currentUserDoc?.role ? `(${currentUserDoc.role})` : ''}
                   </div>
                 )}
 
                 <p className="text-xs text-slate-600 leading-relaxed pt-1">
-                  Borang Pendaftaran & Pengurusan Kes ini <b>hanya dibenarkan untuk Ahli Jawatankuasa (AJK)</b> yang berdaftar dari Admin Utama, Pengerusi hingga Juru Audit sahaja bagi tujuan simpanan rasmi persatuan dan rujukan PDRM.
+                  Borang Pendaftaran & Pengurusan Kes Disiplin ini <b>hanya dibenarkan diisi dan diakses oleh pengguna dengan peranan Admin Utama dan Guru</b> sahaja bagi tujuan pemantauan disiplin, siasatan tatatertib, dan rekod Hal Ehwal Murid (HEM).
                 </p>
 
                 <p className="text-xs text-rose-700 font-bold pt-1">
-                  Akaun anda semasa ini tidak mempunyai peranan AJK. Sila hubungi Admin Persatuan sekiranya akaun anda patut diberikan akses AJK.
+                  Akaun anda semasa ini tidak mempunyai peranan Admin Utama atau Guru. Sila hubungi pihak pentadbiran sekolah sekiranya akaun anda memerlukan akses tersebut.
                 </p>
               </div>
 
