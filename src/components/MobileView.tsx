@@ -1031,7 +1031,7 @@ export default function MobileView({
       if (hasDokumenAccess) {
         setCurrentTab('dokumen');
       } else {
-        alert("Akses Terhad: Hanya Admin Utama, Pengerusi, Naib Pengerusi, Setiausaha, Naib/Penolong Setiausaha, dan Bendahari sahaja yang dibenarkan untuk mengakses modul Dokumen Persatuan.");
+        alert("Akses Terhad: Hanya Admin Utama, Pengerusi, Naib Pengerusi, Setiausaha, Naib/Penolong Setiausaha, dan Bendahari sahaja yang dibenarkan untuk mengakses modul Dokumen Sekolah.");
       }
     } else if (id === 'daftar-ahli') {
       if (!firebaseUser || firebaseUser.isAnonymous) {
@@ -1762,7 +1762,7 @@ export default function MobileView({
                       <span className="text-[9px] text-amber-100 font-extrabold">Perlu Kemaskini</span>
                     </div>
                     <h4 className="font-black text-xs text-white leading-tight">
-                      Permohonan Keahlian Anda Memerlukan Kemaskini
+                      Permohonan Pendaftaran Warga Memerlukan Kemaskini
                     </h4>
                     <p className="text-[10px] text-amber-50 leading-normal line-clamp-2">
                       Pihak pentadbir mendapati item pendaftaran anda masih belum lengkap (contohnya Nama Penuh / Isi Rumah).
@@ -1959,7 +1959,7 @@ export default function MobileView({
                         if (hasDokumenAccess) {
                           setCurrentTab('dokumen');
                         } else {
-                          alert("Akses Terhad: Hanya Admin Utama, Pengerusi, Naib Pengerusi, Setiausaha, Naib Setiausaha, dan Bendahari sahaja yang dibenarkan untuk mengakses Dokumen Persatuan.");
+                          alert("Akses Terhad: Hanya Admin Utama, Pengerusi, Naib Pengerusi, Setiausaha, Naib Setiausaha, dan Bendahari sahaja yang dibenarkan untuk mengakses Dokumen Sekolah.");
                         }
                       }}
                       className="flex flex-col items-center text-center cursor-pointer group animate-in zoom-in duration-150 relative min-w-0 w-full"
@@ -1973,7 +1973,7 @@ export default function MobileView({
                         <BookOpen size={16} />
                       </div>
                       <span className="text-[8px] font-bold text-gray-600 leading-tight line-clamp-2 w-full px-0.5 break-words">
-                        Dokumen Persatuan
+                        Dokumen Sekolah
                       </span>
                     </button>
 
@@ -2032,7 +2032,7 @@ export default function MobileView({
                           <CheckCircle2 size={16} />
                         </div>
                         <span className="text-[8px] font-bold text-gray-600 leading-tight line-clamp-2 w-full px-0.5 break-words">
-                          Kelulusan Ahli
+                          Kelulusan Warga
                         </span>
                       </button>
                     )}
@@ -2174,7 +2174,7 @@ export default function MobileView({
               </div>
             </div>
 
-            {/* Daftar Ahli / Kad Keahlian Banner */}
+            {/* Pengesahan Warga Banner */}
             {isApprovedMember ? (
               <div 
                 onClick={() => setCurrentTab('daftar-ahli')}
@@ -2187,7 +2187,7 @@ export default function MobileView({
                   <div className="space-y-1 text-white pr-8">
                     <div className="flex items-center gap-1.5">
                       <span className="px-2 py-0.5 bg-emerald-400/30 border border-emerald-300/40 text-emerald-100 text-[8px] font-black rounded-full uppercase tracking-wider flex items-center gap-1">
-                        <CheckCircle2 size={10} className="text-emerald-300" /> KEAHLIAN AKTIF
+                        <CheckCircle2 size={10} className="text-emerald-300" /> WARGA AKTIF
                       </span>
                       {currentUserDoc?.memberNo && (
                         <span className="font-mono text-[10px] text-emerald-200 font-extrabold bg-black/20 px-1.5 py-0.5 rounded">
@@ -2196,10 +2196,10 @@ export default function MobileView({
                       )}
                     </div>
                     <h3 className="font-extrabold text-sm flex items-center gap-1.5">
-                      Pengesahan & Kad Keahlian Rasmi <ChevronRight size={14} />
+                      Pengesahan Pendaftaran Warga Sekolah <ChevronRight size={14} />
                     </h3>
                     <p className="text-[10px] font-medium text-emerald-100 leading-relaxed">
-                      Tahniah! Anda adalah ahli sah Persatuan Taman Musytari Fasa 2 Batu Kikir Negeri Sembilan. Klik untuk melihat dan memuat turun kad keahlian rasmi untuk simpanan anda (PNG / PDF).
+                      Tahniah! Anda adalah warga sah Sekolah Menengah Agama Ulu Jempol. Klik untuk melihat butiran dan maklumat pendaftaran warga anda.
                     </p>
                   </div>
                 </div>
@@ -2230,10 +2230,10 @@ export default function MobileView({
                       </span>
                     )}
                     <h3 className="font-extrabold text-sm flex items-center gap-1.5">
-                      Daftar Ahli Sekarang <ChevronRight size={14} />
+                      Daftar Warga Sekarang <ChevronRight size={14} />
                     </h3>
                     <p className="text-[10px] font-medium text-indigo-100 leading-relaxed">
-                      Sertai komuniti Persatuan Taman Musytari Fasa 2. Nikmati kemudahan dan pelbagai manfaat eksklusif.
+                      Sertai dan daftarkan diri sebagai warga rasmi Sekolah Menengah Agama Ulu Jempol.
                     </p>
                   </div>
                 </div>
@@ -3140,7 +3140,7 @@ export default function MobileView({
                   <ChevronLeft size={20} />
                 </button>
                 <div>
-                  <h3 className="font-extrabold text-base text-gray-900">Kelulusan Ahli Baru</h3>
+                  <h3 className="font-extrabold text-base text-gray-900">Kelulusan Warga Baru</h3>
                 </div>
               </div>
               <KelulusanAhliSection onBack={() => setCurrentTab('utama')} />

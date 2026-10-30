@@ -191,7 +191,7 @@ export default function KehadiranSection({ onBack }: KehadiranSectionProps) {
       const userUid = firebaseUser.uid;
       const userName = currentUserDoc?.displayName || currentUserDoc?.nickname || firebaseUser.displayName || 'Penduduk';
       const userEmail = currentUserDoc?.email || firebaseUser.email || '';
-      const userRole = currentUserDoc?.role || 'Pelawat (Belum Daftar Ahli)';
+      const userRole = currentUserDoc?.role || 'Pelawat (Belum Daftar Warga)';
       const docId = `kehadiran-${activeNotice.id}-${userUid}`;
 
       const payload: Kehadiran & { noRumah?: string; phoneNumber?: string } = {
@@ -777,7 +777,7 @@ export default function KehadiranSection({ onBack }: KehadiranSectionProps) {
                   className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-indigo-200/60 flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-[1.01]"
                 >
                   <UserPlus size={16} />
-                  <span>Daftar Ahli Sekarang</span>
+                  <span>Daftar Warga Sekarang</span>
                   <ArrowRight size={14} />
                 </button>
 

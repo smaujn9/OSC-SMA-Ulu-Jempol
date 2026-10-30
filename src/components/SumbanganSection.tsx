@@ -395,12 +395,12 @@ export default function SumbanganSection({
               <ShieldCheck size={18} className={isLoggedIn ? 'text-emerald-600' : 'text-amber-600'} />
               <div>
                 <span className="font-extrabold block">
-                  {isLoggedIn ? 'Akaun Berdaftar Warga/PIBG SMAUJ (Maklumat Automatik)' : 'Sumbangan Awam / Tetamu (Bukan Ahli Berdaftar)'}
+                  {isLoggedIn ? 'Akaun Berdaftar Warga/PIBG SMAUJ (Maklumat Automatik)' : 'Sumbangan Awam / Tetamu (Bukan Warga Berdaftar)'}
                 </span>
                 <span className="text-[11px] opacity-80 font-medium">
                   {isLoggedIn 
                     ? 'Maklumat profil anda telah dimuatkan secara automatik.' 
-                    : 'Anda boleh menyumbang tanpa perlu mendaftar ahli terlebih dahulu. Sila lengkapkan borang di bawah.'}
+                    : 'Anda boleh menyumbang tanpa perlu mendaftar warga terlebih dahulu. Sila lengkapkan borang di bawah.'}
                 </span>
               </div>
             </div>

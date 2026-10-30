@@ -1096,7 +1096,7 @@ export default function YuranSection({
                           <div className="flex items-center gap-2">
                             <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 ring-4 ring-indigo-100" />
                             <h3 className="font-extrabold text-xs text-indigo-950 uppercase tracking-widest">
-                              Yuran Pendaftaran Keahlian
+                              Yuran Pendaftaran Warga
                             </h3>
                           </div>
                           <span className="bg-indigo-100/90 text-indigo-800 border border-indigo-200 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
@@ -1836,12 +1836,12 @@ export default function YuranSection({
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-white/80">
                   <Award size={18} className="stroke-[2.5]" />
-                  <span className="text-[10px] text-white/60 font-bold uppercase tracking-wider">Status Keahlian</span>
+                  <span className="text-[10px] text-white/60 font-bold uppercase tracking-wider">Status Warga</span>
                 </div>
                 <div className="mt-1">
                   {currentUserDoc?.membershipStatus === 'Aktif' ? (
                     <span className="bg-[#10b981] text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block">
-                      Aktif
+                      Warga Aktif
                     </span>
                   ) : currentUserDoc?.membershipStatus === 'Menunggu Kelulusan' ? (
                     <span className="bg-amber-500 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block">
@@ -1857,7 +1857,7 @@ export default function YuranSection({
                     </span>
                   ) : (
                     <span className="bg-slate-500/40 text-slate-200 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block">
-                      Bukan Ahli
+                      Bukan Warga
                     </span>
                   )}
                 </div>
@@ -1866,11 +1866,11 @@ export default function YuranSection({
                 ) : currentUserDoc?.membershipStatus === 'Menunggu Kelulusan' ? (
                   <span className="text-[9px] text-white/50 block font-bold mt-1">Menunggu Kelulusan</span>
                 ) : currentUserDoc?.membershipStatus === 'Ditolak' || currentUserDoc?.approvalStatus === 'Rejected' ? (
-                  <span className="text-[9px] text-white/50 block font-bold mt-1">Keahlian Ditolak</span>
+                  <span className="text-[9px] text-white/50 block font-bold mt-1">Permohonan Ditolak</span>
                 ) : currentUserDoc?.approvalStatus === 'Dilucutkan' || currentUserDoc?.membershipStatus === 'Tidak Aktif' ? (
-                  <span className="text-[9px] text-white/50 block font-bold mt-1">Keahlian Dilucutkan</span>
+                  <span className="text-[9px] text-white/50 block font-bold mt-1">Status Dilucutkan</span>
                 ) : (
-                  <span className="text-[9px] text-white/50 block font-bold mt-1">Sila daftar keahlian</span>
+                  <span className="text-[9px] text-white/50 block font-bold mt-1">Sila daftar warga</span>
                 )}
               </div>
             </div>

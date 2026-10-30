@@ -1284,11 +1284,11 @@ export default function AdminPushNotificationSection({
                 📄 Format Emel Kelulusan PTMF2:
               </span>
               <ul className="space-y-1.5 text-slate-600 text-[11px] list-disc list-inside">
-                <li>Tajuk rasmi berserta Nombor Ahli PTMF2 yang dijana.</li>
+                <li>Tajuk rasmi berserta Nombor ID Warga yang dijana.</li>
                 <li>Jadual butiran peribadi, nombor rumah & tarikh lulus.</li>
-                <li>Panduan muat turun Sijil & Kad Keahlian Digital.</li>
-                <li>Pautan terus ke Portal Penduduk PTMF2.</li>
-                <li>Maklumat hubungan rasmi Setiausaha Persatuan.</li>
+                <li>Pengesahan rasmi pendaftaran warga sekolah.</li>
+                <li>Pautan terus ke Portal Warga SMAUJ.</li>
+                <li>Maklumat hubungan rasmi Setiausaha / Pentadbir.</li>
               </ul>
             </div>
 

@@ -205,7 +205,7 @@ export default function ChatSection({ posts, onAddPost, onLikePost, onAddComment
           </button>
         ) : (
           <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 inline-block font-semibold">
-            Status Keahlian: Menunggu Kelulusan Jawatankuasa
+            Status Warga: Menunggu Kelulusan Pentadbiran
           </div>
         )}
       </div>

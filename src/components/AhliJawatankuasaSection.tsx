@@ -615,7 +615,7 @@ export default function AhliJawatankuasaSection({ isMobile = false }: { isMobile
           ) : (
             <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold bg-slate-50 px-2.5 py-1 rounded-md">
               <Lock size={10} className="text-slate-400" />
-              <span>Daftar Ahli untuk No Tel</span>
+              <span>Daftar Warga untuk No Tel</span>
             </div>
           )}
         </div>
@@ -755,7 +755,7 @@ export default function AhliJawatankuasaSection({ isMobile = false }: { isMobile
           ) : (
             <div className="flex items-center gap-1 text-[9px] text-slate-400 font-bold bg-slate-50 px-2 py-1 rounded-md">
               <Lock size={10} className="text-slate-400" />
-              <span>Daftar Ahli untuk No Tel</span>
+              <span>Daftar Warga untuk No Tel</span>
             </div>
           )}
         </div>

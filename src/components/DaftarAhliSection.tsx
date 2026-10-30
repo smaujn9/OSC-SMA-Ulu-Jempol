@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { UserPlus, Save, CheckCircle2, Phone, Mail, MapPin, Award, ArrowLeft, Plus, Trash2, Home, Users, HelpCircle, AlertCircle, User, LogIn, X, Lock, AlertTriangle, Bell, Copy, Check, ShieldCheck, ShieldAlert, Edit3, Loader2, Clock, Download, Image as ImageIcon, FileText, Printer } from 'lucide-react';
 import { doc, getDoc, getDocs, query, collection, where, onSnapshot, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { downloadMembershipCardImage, downloadMembershipCardPdf, MembershipCardData } from '../utils/membershipCardHelper';
 
 interface DaftarAhliSectionProps {
   isMobile?: boolean;
@@ -41,8 +40,6 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
   const [submitError, setSubmitError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [copiedMemberNo, setCopiedMemberNo] = useState(false);
-  const [downloadingCardType, setDownloadingCardType] = useState<'png' | 'pdf' | null>(null);
-  const [downloadSuccessMessage, setDownloadSuccessMessage] = useState<string | null>(null);
 
   const [isRegistrationEnabled, setIsRegistrationEnabled] = useState<boolean>(true);
   const [hasInitializedForm, setHasInitializedForm] = useState<boolean>(false);
@@ -683,7 +680,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
             <Edit3 size={18} className="text-indigo-600 shrink-0" />
             <div>
               <span className="font-black uppercase tracking-wider block text-indigo-900">MOD KEMASKINI PERMOHONAN</span>
-              <p className="text-[10px] font-normal text-indigo-700">Mengemaskini butiran permohonan keahlian sebelum disahkan oleh pihak Persatuan.</p>
+              <p className="text-[10px] font-normal text-indigo-700">Mengemaskini butiran permohonan pendaftaran warga sebelum disahkan oleh pihak sekolah.</p>
             </div>
           </div>
           <button
@@ -707,7 +704,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
                 <CheckCircle2 size={16} />
               </div>
               <div className="space-y-0.5">
-                <h5 className="font-extrabold text-xs text-emerald-800">KEAHLIAN AKTIF</h5>
+                <h5 className="font-extrabold text-xs text-emerald-800">WARGA AKTIF</h5>
                 <p className="text-[10px] text-emerald-600 font-bold leading-relaxed">
                   Tahniah! Anda adalah warga berdaftar Sekolah Menengah Agama Ulu Jempol (SMAUJ) dengan No. Pendaftaran: <span className="font-mono bg-emerald-100/50 px-1.5 py-0.5 rounded text-emerald-700 font-extrabold">{displayMemberNo}</span>. Maklumat di bawah merupakan butiran berdaftar anda.
                 </p>
@@ -759,7 +756,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
               <div className="space-y-0.5">
                 <h5 className="font-extrabold text-xs text-amber-900 uppercase tracking-wider">PERMOHONAN SEDANG DIPROSES (SEMAKAN SEMULA)</h5>
                 <p className="text-[10px] text-amber-800 font-bold leading-relaxed">
-                  Borang permohonan keahlian anda telah berjaya dikemaskini dan kini berada dalam status <strong className="text-amber-950 font-black underline decoration-amber-400">Semakan Semula</strong>. Sila tunggu pihak Setiausaha / Admin Utama membuat semakan dan kelulusan semula secara berkala.
+                  Borang permohonan pendaftaran warga anda telah berjaya dikemaskini dan kini berada dalam status <strong className="text-amber-950 font-black underline decoration-amber-400">Semakan Semula</strong>. Sila tunggu pihak Pentadbir Sekolah membuat semakan dan kelulusan semula secara berkala.
                 </p>
               </div>
             </div>
@@ -773,7 +770,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
               <div className="space-y-0.5">
                 <h5 className="font-extrabold text-xs text-rose-800">PERMOHONAN DITOLAK</h5>
                 <p className="text-[10px] text-rose-600 font-bold leading-relaxed">
-                  Dukacita dimaklumkan permohonan keahlian anda telah ditolak. Sila kemas kini maklumat anda di bawah dan hantar semula permohonan baru.
+                  Dukacita dimaklumkan permohonan pendaftaran warga anda telah ditolak. Sila kemas kini maklumat anda di bawah dan hantar semula permohonan baru.
                 </p>
               </div>
             </div>
@@ -786,7 +783,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
               </div>
               <div className="space-y-1 w-full">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <h5 className="font-extrabold text-xs text-indigo-950">STATUS: BUKAN AHLI</h5>
+                  <h5 className="font-extrabold text-xs text-indigo-950">STATUS: BUKAN WARGA</h5>
                   <button
                     type="button"
                     onClick={() => setShowWarningModal(true)}
@@ -797,7 +794,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
                   </button>
                 </div>
                 <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
-                  Anda melayari sistem sebagai pelawat/tetamu sahaja. Sila lengkapkan borang di bawah untuk memohon keahlian rasmi sehinggalah permohonan anda diluluskan oleh pihak pengurusan persatuan.
+                  Anda melayari sistem sebagai pelawat/tetamu sahaja. Sila lengkapkan borang di bawah untuk memohon pendaftaran warga rasmi sehinggalah permohonan anda disahkan oleh pihak pentadbir sekolah.
                 </p>
               </div>
             </div>
@@ -1366,7 +1363,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
       <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 flex items-start gap-2.5">
         <Bell size={16} className="text-indigo-600 shrink-0 mt-0.5" />
         <p className="text-[10px] text-indigo-900 font-semibold leading-relaxed">
-          <strong className="font-bold">Notifikasi Automatik:</strong> Anda akan menerima pemberitahuan push notification pada peranti ini secara langsung sebaik sahaja permohonan keahlian anda disemak dan diluluskan.
+          <strong className="font-bold">Notifikasi Automatik:</strong> Anda akan menerima pemberitahuan push notification pada peranti ini secara langsung sebaik sahaja permohonan pendaftaran warga anda disemak dan disahkan.
         </p>
       </div>
 
@@ -1387,8 +1384,8 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
             : currentUserDoc?.membershipStatus === 'Menunggu Kelulusan'
               ? 'PERMOHONAN SEDANG DIPROSES'
               : currentUserDoc?.membershipStatus === 'Aktif'
-                ? 'KEMASKINI MAKLUMAT KEAHLIAN'
-                : 'DAFTAR KEAHLIAN'}
+                ? 'KEMASKINI MAKLUMAT WARGA'
+                : 'DAFTAR WARGA'}
       </button>
 
       {/* Modals for Policies */}
@@ -1413,8 +1410,8 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
               </p>
               <ul className="list-disc pl-5 space-y-2 text-slate-500">
                 <li>Berdasarkan undang-undang Malaysia, memberikan maklumat palsu dalam apa-apa permohonan atau pengisytiharan rasmi boleh menjadi satu kesalahan di bawah Kanun Keseksaan (Penal Code) dan akta-akta berkaitan.</li>
-                <li>Sekiranya maklumat didapati palsu, pihak Persatuan berhak membatalkan permohonan keahlian anda serta-merta tanpa sebarang notis.</li>
-                <li>Sebarang yuran yang telah dibayar mungkin tidak akan dikembalikan sekiranya keahlian terbatal akibat penipuan identiti.</li>
+                <li>Sekiranya maklumat didapati palsu, pihak pengurusan sekolah berhak membatalkan permohonan pendaftaran warga anda serta-merta tanpa sebarang notis.</li>
+                <li>Sebarang yuran yang telah dibayar mungkin tidak akan dikembalikan sekiranya pendaftaran warga terbatal akibat penipuan identiti.</li>
               </ul>
               <div className="bg-amber-50 text-amber-700 p-3 rounded-xl border border-amber-100 mt-2 font-bold">
                 Sila pastikan anda menyemak semula butiran peribadi, nombor kad pengenalan dan maklumat isi rumah sebelum menghantar permohonan ini.
@@ -1453,11 +1450,11 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
                 </div>
                 <div>
                   <strong className="text-slate-800 block mb-0.5">2. Tujuan Penggunaan Data</strong>
-                  <p className="text-slate-500 leading-relaxed">Data anda digunakan khusus untuk tujuan pendaftaran keahlian, pengurusan rekod persatuan, penyampaian notis mesyuarat, serta perancangan aktiviti dan kutipan yuran persatuan.</p>
+                  <p className="text-slate-500 leading-relaxed">Data anda digunakan khusus untuk tujuan pendaftaran warga, pengurusan rekod sekolah, penyampaian notis mesyuarat, serta perancangan aktiviti dan kutipan sumbangan/yuran sekolah.</p>
                 </div>
                 <div>
                   <strong className="text-slate-800 block mb-0.5">3. Keselamatan Data</strong>
-                  <p className="text-slate-500 leading-relaxed">Maklumat anda disimpan dengan selamat dalam sistem pangkalan data awan (Google Cloud / Firebase) yang dilindungi oleh pengesahan identiti terkini dan Polisi Keselamatan (Security Rules). Akses kepada data anda hanya diberikan kepada Ahli Jawatankuasa (AJK) yang diberi kuasa.</p>
+                  <p className="text-slate-500 leading-relaxed">Maklumat anda disimpan dengan selamat dalam sistem pangkalan data awan (Google Cloud / Firebase) yang dilindungi oleh pengesahan identiti terkini dan Polisi Keselamatan (Security Rules). Akses kepada data anda hanya diberikan kepada pihak pentadbir yang diberi kuasa.</p>
                 </div>
                 <div>
                   <strong className="text-slate-800 block mb-0.5">4. Pendedahan Pihak Ketiga</strong>
@@ -1487,7 +1484,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
                 </span>
                 <div>
                   <h3 className="font-black text-xs sm:text-sm text-amber-950 uppercase tracking-wide">
-                    Peringatan Pendaftaran Keahlian
+                    Peringatan Pendaftaran Warga
                   </h3>
                   <p className="text-[10px] text-amber-700 font-bold">1 Rumah 1 Pendaftaran Sahaja</p>
                 </div>
@@ -1518,7 +1515,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
                   1 Rumah, 1 Pendaftaran Sahaja
                 </h4>
                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                  Pendaftaran rasmi keahlian adalah berasaskan unit kediaman bagi mengelakkan pertindihan rekod alamat.
+                  Pendaftaran rasmi warga adalah berasaskan unit kediaman bagi mengelakkan pertindihan rekod alamat.
                 </p>
               </div>
 
@@ -1534,22 +1531,22 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
                       Satu (1) Pendaftaran Bagi Setiap Kediaman
                     </h5>
                     <p className="text-[11px] text-amber-900/90 leading-relaxed font-medium">
-                      Hanya <strong>seorang wakil</strong> sahaja dari setiap unit rumah (pemilik atau penyewa) perlu mengisi borang pendaftaran keahlian rasmi ini.
+                      Hanya <strong>seorang wakil</strong> sahaja dari setiap unit rumah (pemilik atau penyewa) perlu mengisi borang pendaftaran warga rasmi ini.
                     </p>
                   </div>
                 </div>
 
-                {/* Point 2: Keahlian Automatik Isi Rumah */}
+                {/* Point 2: Warga Automatik Isi Rumah */}
                 <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-2xl p-3.5 flex items-start gap-3">
                   <div className="p-1.5 bg-emerald-100 text-emerald-800 rounded-xl shrink-0 mt-0.5">
                     <Users size={16} className="stroke-[2.5]" />
                   </div>
                   <div className="space-y-0.5">
                     <h5 className="font-extrabold text-xs text-emerald-950">
-                      Keahlian Automatik Untuk Seluruh Isi Rumah
+                      Pendaftaran Warga Automatik Untuk Seluruh Isi Rumah
                     </h5>
                     <p className="text-[11px] text-emerald-900/90 leading-relaxed font-medium">
-                      Semua nama yang didaftarkan di dalam <strong>Senarai Isi Rumah & Tanggungan</strong> secara <strong>automatik diiktiraf sebagai Ahli Sah Persatuan</strong> serta layak menerima kemudahan dan kebajikan bersama.
+                      Semua nama yang didaftarkan di dalam <strong>Senarai Isi Rumah & Tanggungan</strong> secara <strong>automatik diiktiraf sebagai Warga Sah Sekolah</strong> serta layak menerima kemudahan dan kebajikan bersama.
                     </p>
                   </div>
                 </div>
@@ -1588,41 +1585,9 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
     }
   };
 
-  const handleDownloadCard = async (type: 'png' | 'pdf') => {
-    try {
-      setDownloadingCardType(type);
-      const cardData: MembershipCardData = {
-        memberNo: displayMemberNo,
-        name: displayName,
-        role: displayRole,
-        noRumah: displayNoRumah !== '-' ? displayNoRumah : '',
-        icNumber: displayIc !== '-' ? displayIc : '',
-        phone: displayPhone !== '-' ? displayPhone : '',
-        email: displayEmail !== '-' ? displayEmail : '',
-        address: displayAddress !== '-' ? displayAddress : '',
-        statusKediaman: displayStatusKediaman,
-        avatarUrl: currentUserDoc?.uploadedProfileImageUrl || currentUserDoc?.photoURL || firebaseUser?.photoURL || undefined
-      };
-
-      if (type === 'png') {
-        await downloadMembershipCardImage(cardData);
-        setDownloadSuccessMessage('Kad keahlian rasmi (PNG) berkualiti tinggi berjaya dimuat turun!');
-      } else {
-        await downloadMembershipCardPdf(cardData);
-        setDownloadSuccessMessage('Sijil pengesahan & kad rasmi (PDF A4 sedia cetak) berjaya dimuat turun!');
-      }
-      setTimeout(() => setDownloadSuccessMessage(null), 5000);
-    } catch (err: any) {
-      console.error('Ralat muat turun kad keahlian:', err);
-      alert('Ralat semasa menjana kad keahlian: ' + (err?.message || 'Sila cuba sebentar lagi.'));
-    } finally {
-      setDownloadingCardType(null);
-    }
-  };
-
   const approvedMemberView = (
     <div className="space-y-5 animate-in fade-in duration-300">
-      {/* 1. Official Digital Membership Card */}
+      {/* 1. Penyata Pengesahan Pendaftaran Warga Sekolah */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-900 text-white shadow-xl shadow-emerald-900/20 border border-emerald-400/30 p-5 sm:p-6">
         {/* Decorative background watermark */}
         <div className="absolute -right-6 -bottom-6 opacity-10 pointer-events-none">
@@ -1634,7 +1599,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
           <div className="flex items-start justify-between gap-3 border-b border-white/15 pb-3.5">
             <div>
               <span className="text-[9px] font-black uppercase tracking-widest text-emerald-200">
-                Kad Pengenalan Digital Warga Sekolah
+                Penyata Pengesahan Pendaftaran Warga
               </span>
               <h3 className="font-black text-sm sm:text-base tracking-tight leading-tight mt-0.5">
                 Sekolah Menengah Agama Ulu Jempol (SMAUJ)
@@ -1643,7 +1608,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
             </div>
             <div className="shrink-0 bg-emerald-500/30 border border-emerald-300/40 rounded-full px-2.5 py-1 flex items-center gap-1.5 shadow-xs">
               <CheckCircle2 size={13} className="text-emerald-200 fill-emerald-500/50" />
-              <span className="text-[10px] font-black uppercase tracking-wider text-white">AKTIF</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-white">WARGA AKTIF</span>
             </div>
           </div>
 
@@ -1651,7 +1616,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
           <div className="bg-black/25 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-white/10 flex items-center justify-between gap-3">
             <div>
               <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-200 block">
-                Nombor Keahlian Rasmi
+                Nombor ID Warga Rasmi
               </span>
               <span className="font-mono text-xl sm:text-2xl font-black text-white tracking-widest">
                 {displayMemberNo}
@@ -1661,7 +1626,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
               type="button"
               onClick={handleCopyMemberNo}
               className="px-3 py-1.5 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white rounded-xl text-[10px] font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border border-white/20"
-              title="Salin Nombor Ahli"
+              title="Salin Nombor ID Warga"
             >
               {copiedMemberNo ? (
                 <>
@@ -1680,7 +1645,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
           {/* Core Member Details Grid */}
           <div className="grid grid-cols-2 gap-3 pt-1">
             <div>
-              <span className="text-[9px] font-bold text-emerald-200/80 uppercase tracking-wider block">Nama Ahli</span>
+              <span className="text-[9px] font-bold text-emerald-200/80 uppercase tracking-wider block">Nama Warga</span>
               <span className="font-extrabold text-xs sm:text-sm text-white block truncate uppercase">{displayName}</span>
             </div>
             <div>
@@ -1696,51 +1661,6 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
               <span className="font-mono font-bold text-xs sm:text-sm text-emerald-100 block">{displayIc}</span>
             </div>
           </div>
-
-          {/* Download Action Inside Card */}
-          <div className="pt-3.5 border-t border-white/20 flex flex-wrap items-center justify-between gap-3">
-            <span className="text-xs text-emerald-100 font-bold flex items-center gap-1.5">
-              <Download size={14} className="text-emerald-300" />
-              <span>Muat Turun Kad Keahlian Rasmi:</span>
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleDownloadCard('png')}
-                disabled={downloadingCardType !== null}
-                className="px-3.5 py-2 bg-white/20 hover:bg-white/30 active:scale-[0.98] text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer border border-white/30 disabled:opacity-50 shadow-sm"
-                title="Muat Turun Fail Gambar Kad (PNG)"
-              >
-                {downloadingCardType === 'png' ? (
-                  <Loader2 size={13} className="animate-spin text-white" />
-                ) : (
-                  <ImageIcon size={13} className="text-emerald-200" />
-                )}
-                <span>Muat Turun PNG</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDownloadCard('pdf')}
-                disabled={downloadingCardType !== null}
-                className="px-3.5 py-2 bg-emerald-950/70 hover:bg-emerald-950/90 active:scale-[0.98] text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer border border-emerald-400/40 disabled:opacity-50 shadow-sm"
-                title="Muat Turun Sijil & Kad (PDF A4)"
-              >
-                {downloadingCardType === 'pdf' ? (
-                  <Loader2 size={13} className="animate-spin text-white" />
-                ) : (
-                  <FileText size={13} className="text-emerald-300" />
-                )}
-                <span>Muat Turun PDF</span>
-              </button>
-            </div>
-          </div>
-
-          {downloadSuccessMessage && (
-            <div className="mt-3 p-2.5 bg-emerald-900/60 backdrop-blur-md border border-emerald-400/40 rounded-xl text-xs font-bold text-emerald-100 flex items-center gap-2 animate-in fade-in duration-200 shadow-sm">
-              <CheckCircle2 size={15} className="text-emerald-300 shrink-0" />
-              <span>{downloadSuccessMessage}</span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -1751,11 +1671,11 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h4 className="font-black text-xs text-emerald-950 uppercase tracking-tight">Keahlian Sah & Aktif</h4>
+            <h4 className="font-black text-xs text-emerald-950 uppercase tracking-tight">Warga Sah & Aktif</h4>
             <span className="px-2 py-0.5 bg-emerald-200/70 text-emerald-800 text-[9px] font-extrabold rounded-md">STATUS: AKTIF</span>
           </div>
           <p className="text-[11px] text-emerald-800 font-semibold leading-relaxed">
-            Tahniah! Anda adalah warga berdaftar Sekolah Menengah Agama Ulu Jempol (SMAUJ). Rekod pendaftaran anda telah diluluskan rasmi dalam pengkalan data sekolah. Anda tidak perlu membuat permohonan baharu.
+            Tahniah! Anda adalah warga berdaftar Sekolah Menengah Agama Ulu Jempol (SMAUJ). Rekod pendaftaran anda telah disahkan rasmi dalam pangkalan data sekolah. Anda tidak perlu membuat permohonan baharu.
           </p>
         </div>
       </div>
@@ -1765,10 +1685,10 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <h4 className="font-black text-xs text-slate-900 flex items-center gap-2 uppercase tracking-wider">
             <Award size={15} className="text-emerald-600" />
-            Butiran Pendaftaran Keahlian
+            Butiran Pendaftaran Warga
           </h4>
           <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
-            No. Ahli: {displayMemberNo}
+            No. ID Warga: {displayMemberNo}
           </span>
         </div>
 
@@ -1878,7 +1798,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
             Permohonan Sedang Diproses
           </h3>
           <p className="text-xs text-amber-800 font-medium leading-relaxed">
-            Permohonan pendaftaran keahlian anda bagi unit rumah <strong className="font-bold">No. {displayNoRumah}</strong> telah berjaya diterima dan sedang menunggu semakan serta kelulusan pihak Setiausaha / Admin Persatuan.
+            Permohonan pendaftaran warga anda bagi unit rumah <strong className="font-bold">No. {displayNoRumah}</strong> telah berjaya diterima dan sedang menunggu semakan serta pengesahan pihak Pentadbir Sekolah.
           </p>
         </div>
       </div>
@@ -1960,11 +1880,11 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
             </div>
           </div>
 
-          {/* Member Card Box */}
+          {/* Pendaftaran Warga Box */}
           <div className="bg-black/25 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-white/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <span className="text-[9px] font-bold uppercase tracking-wider text-amber-200 block">
-                Status Kelulusan Kad Keahlian
+                Status Kelulusan Pendaftaran Warga
               </span>
               <span className="font-mono text-base sm:text-lg font-black text-amber-100 tracking-wide block">
                 PERLU KEMASKINI (KUIRI)
@@ -1973,7 +1893,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
             {displayMemberNo && displayMemberNo !== 'SMAUJ-2026-SAH' ? (
               <div className="sm:text-right">
                 <span className="text-[9px] font-bold uppercase tracking-wider text-amber-200 block">
-                  No. Ahli (Ditangguhkan)
+                  No. ID Warga (Ditangguhkan)
                 </span>
                 <span className="font-mono text-xs font-black text-white bg-amber-950/60 px-2.5 py-1 rounded-lg border border-amber-400/50 inline-block mt-0.5">
                   {displayMemberNo}
@@ -2006,12 +1926,12 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
             </div>
           </div>
 
-          {/* Kuiri Alert Notice Bar on Card */}
+          {/* Kuiri Alert Notice Bar */}
           <div className="mt-2 pt-3 border-t border-white/20 bg-amber-950/40 -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 p-4 rounded-b-3xl flex items-start gap-2.5 text-xs text-amber-100">
             <AlertCircle size={16} className="text-amber-300 shrink-0 mt-0.5" />
             <div className="leading-snug">
-              <strong className="text-white block font-black">NOTIS KUIRI PADA KAD AHLI:</strong>
-              Kad keahlian rasmi anda ditangguhkan sementara kerana terdapat butiran pendaftaran yang masih gagal/belum lengkap. Sila klik butang di bawah untuk kemaskini permohonan.
+              <strong className="text-white block font-black">NOTIS KUIRI PENDAFTARAN WARGA:</strong>
+              Pendaftaran warga anda ditangguhkan sementara kerana terdapat butiran pendaftaran yang masih gagal/belum lengkap. Sila klik butang di bawah untuk kemaskini permohonan.
             </div>
           </div>
         </div>
@@ -2031,7 +1951,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
             Permohonan Anda Perlu Dikemaskini
           </h3>
           <p className="text-xs text-amber-900 font-medium leading-relaxed">
-            Pihak Pentadbir / Setiausaha Persatuan telah menyemak permohonan keahlian bagi unit rumah <strong className="font-bold">No. {displayNoRumah}</strong> dan mendapati terdapat maklumat yang masih belum lengkap/gagal. Sila kemaskini butiran yang dinyatakan di bawah dan hantar semula permohonan.
+            Pihak Pentadbir telah menyemak permohonan pendaftaran warga bagi unit rumah <strong className="font-bold">No. {displayNoRumah}</strong> dan mendapati terdapat maklumat yang masih belum lengkap/gagal. Sila kemaskini butiran yang dinyatakan di bawah dan hantar semula permohonan.
           </p>
         </div>
 
@@ -2125,7 +2045,7 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
       <div className="flex flex-col items-center justify-center p-12 text-center space-y-4 my-8">
         <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mx-auto" />
         <div className="space-y-1">
-          <h4 className="font-extrabold text-sm text-slate-800">Menyemak Status Keahlian</h4>
+          <h4 className="font-extrabold text-sm text-slate-800">Menyemak Status Warga</h4>
           <p className="text-xs text-slate-500 font-medium">Sila tunggu sebentar sementara sistem memuatkan maklumat pendaftaran...</p>
         </div>
       </div>
@@ -2156,10 +2076,10 @@ export default function DaftarAhliSection({ isMobile = false, onBack }: DaftarAh
         </div>
         <div className="space-y-2 max-w-md">
           <h3 className="font-extrabold text-base text-slate-900 uppercase tracking-tight">
-            PENDAFTARAN KEAHLIAN DITUTUP
+            PENDAFTARAN WARGA DITUTUP
           </h3>
           <p className="text-xs text-slate-600 leading-relaxed font-medium">
-            Pendaftaran keahlian baharu persatuan dinyahaktifkan sementara waktu oleh Admin Utama. Sila semak semula kelak atau hubungi pihak AJK Persatuan untuk maklumat lanjut.
+            Pendaftaran warga baharu dinyahaktifkan sementara waktu oleh Admin Utama. Sila semak semula kelak atau hubungi pihak Pentadbir Sekolah untuk maklumat lanjut.
           </p>
         </div>
         {onBack && (

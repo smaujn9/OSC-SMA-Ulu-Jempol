@@ -16,7 +16,6 @@ import {
   ChevronDown, ChevronUp, Printer, CreditCard, ToggleLeft, ToggleRight, Power, AlertTriangle, Wallet,
   Sparkles, Eye, EyeOff, Cpu, Key, CheckCircle2, Save, UserPlus, Loader2, Mail
 } from 'lucide-react';
-import { downloadMembershipCardPdf, downloadMembershipCardImage, MembershipCardData } from '../utils/membershipCardHelper';
 import { sendMembershipApprovalEmail } from '../utils/notificationHelper';
 
 interface AdminSectionProps {
@@ -747,37 +746,6 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
     }
   };
 
-  const handleDownloadMemberCard = async (app: MembershipApplication, applicantUser: AppUser | undefined, type: 'pdf' | 'png') => {
-    try {
-      setDownloadingAppId(app.id);
-      const cardData: MembershipCardData = {
-        memberNo: app.memberNo || applicantUser?.memberNo || 'PTMF2-AHLI',
-        name: app.name || applicantUser?.displayName || 'Ahli Persatuan',
-        role: applicantUser?.role || 'Ahli Biasa',
-        noRumah: app.noRumah || applicantUser?.noRumah || '',
-        icNumber: app.icNumber || applicantUser?.icNumber || '',
-        phone: app.phone || applicantUser?.phoneNumber || '',
-        email: app.email || applicantUser?.email || '',
-        address: app.address || applicantUser?.address || '',
-        statusKediaman: (applicantUser?.statusKediaman || app.statusKediaman || 'Pemilik').toLowerCase().includes('penyewa') ? 'Penyewa' : 'Pemilik (Sendiri)',
-        avatarUrl: applicantUser?.photoURL || undefined
-      };
-
-      if (type === 'pdf') {
-        await downloadMembershipCardPdf(cardData);
-        triggerSnackbar(`Sijil & kad keahlian rasmi bagi ${app.name} berjaya dimuat turun (PDF)!`, 'success');
-      } else {
-        await downloadMembershipCardImage(cardData);
-        triggerSnackbar(`Gambar kad keahlian rasmi bagi ${app.name} berjaya dimuat turun (PNG)!`, 'success');
-      }
-    } catch (err: any) {
-      console.error('Ralat muat turun kad keahlian:', err);
-      triggerSnackbar('Gagal memuat turun kad keahlian: ' + (err?.message || 'Sila cuba lagi.'), 'error');
-    } finally {
-      setDownloadingAppId(null);
-    }
-  };
-
   // Handle Role Change
   const handleRoleChangeClick = (user: AppUser) => {
     setNewRoleInput(user.role);
@@ -1147,7 +1115,7 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      alert('Sila benarkan tetingkap timbul (pop-ups) untuk mencetak buku daftar ahli ini.');
+      alert('Sila benarkan tetingkap timbul (pop-ups) untuk mencetak buku daftar warga ini.');
       return;
     }
 
@@ -1225,7 +1193,7 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>Buku Rekod Daftar Ahli Persatuan | PTMF2</title>
+  <title>Buku Rekod Daftar Warga Sekolah | SMAUJ</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -1336,7 +1304,7 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
     <div class="no-print flex justify-between items-center mb-6 pb-4 border-b border-outline-variant/30">
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-primary">print</span>
-        <h1 class="text-sm font-bold text-primary">Pratinjau Cetakan Buku Daftar Ahli (Landscape)</h1>
+        <h1 class="text-sm font-bold text-primary">Pratinjau Cetakan Buku Daftar Warga (Landscape)</h1>
       </div>
       <button onclick="window.print()" class="px-5 py-2 bg-primary text-white text-xs font-black rounded-lg hover:bg-slate-800 transition-all shadow-xs cursor-pointer flex items-center gap-2">
         <span class="material-symbols-outlined text-[16px]">print</span>
@@ -1351,11 +1319,11 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
       <div class="flex justify-between items-start gap-4">
         <!-- Association Logo and Identity -->
         <div class="flex items-center gap-4">
-          <img src="https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0663661842.firebasestorage.app/o/20260702_222139_0000%20(1).png?alt=media&token=608e3ede-5bc4-4f53-b850-e44f82422085" alt="Logo Persatuan" style="width: 60px; height: 60px; object-fit: cover;" class="rounded-full shadow-sm bg-white" />
+          <img src="https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0663661842.firebasestorage.app/o/20260702_222139_0000%20(1).png?alt=media&token=608e3ede-5bc4-4f53-b850-e44f82422085" alt="Logo Sekolah" style="width: 60px; height: 60px; object-fit: cover;" class="rounded-full shadow-sm bg-white" />
           <div>
-            <p class="text-[10px] font-black text-primary tracking-widest uppercase opacity-75">BUKU REKOD DAFTAR AHLI PERSATUAN</p>
-            <h1 class="text-lg font-black text-primary leading-tight tracking-tight">PERSATUAN PENDUDUK TAMAN MUSTARI FASA 2</h1>
-            <p class="text-xs font-bold text-slate-500">Batu Kikir, Negeri Sembilan &bull; PPM-001-05-28092026</p>
+            <p class="text-[10px] font-black text-primary tracking-widest uppercase opacity-75">BUKU REKOD DAFTAR WARGA SEKOLAH</p>
+            <h1 class="text-lg font-black text-primary leading-tight tracking-tight">SEKOLAH MENENGAH AGAMA ULU JEMPOL</h1>
+            <p class="text-xs font-bold text-slate-500">Batu Kikir, Negeri Sembilan</p>
           </div>
         </div>
 
@@ -1382,13 +1350,13 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
           <thead>
             <tr class="bg-primary text-white text-[9px] font-black uppercase tracking-wider border-b border-outline-variant/20">
               <th class="px-3 py-2 text-center w-[40px]">Bil.</th>
-              <th class="px-3 py-2 w-[110px]">No. Ahli</th>
+              <th class="px-3 py-2 w-[110px]">No. ID Warga</th>
               <th class="px-3 py-2">Nama Penuh Pemohon</th>
               <th class="px-3 py-2 w-[110px]">No. Kad Pengenalan</th>
               <th class="px-3 py-2 w-[100px]">No. Telefon</th>
               <th class="px-3 py-2">Alamat & No. Rumah</th>
               <th class="px-3 py-2 text-center w-[90px]">Kediaman</th>
-              <th class="px-3 py-2 text-center w-[100px]">Jenis Keahlian</th>
+              <th class="px-3 py-2 text-center w-[100px]">Jenis Warga</th>
               <th class="px-3 py-2 text-center w-[100px]">Tarikh Lulus</th>
               <th class="px-3 py-2 text-center w-[90px]">Status</th>
             </tr>
@@ -1457,15 +1425,15 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
                 <span className="bg-amber-500/30 text-amber-300 font-extrabold text-[10px] tracking-widest px-2.5 py-1 rounded-full border border-amber-500/40 uppercase">Akses Penuh</span>
               ) : (
                 <span className="bg-emerald-500/30 text-emerald-300 font-extrabold text-[10px] tracking-widest px-2.5 py-1 rounded-full border border-emerald-500/40 uppercase">
-                  {currentUserDoc?.role || 'Pengurusan'}: Permohonan Keahlian
+                  {currentUserDoc?.role || 'Pengurusan'}: Permohonan Warga
                 </span>
               )}
             </div>
             <h1 className="text-xl md:text-2xl font-black tracking-tight mt-1">Sistem Pengurusan Komuniti PTMF2</h1>
             <p className="text-xs text-indigo-200 font-medium mt-0.5">
               {isPermohonanOnlyRole
-                ? 'Semak, tapis, luluskan, tolak dan urus senarai permohonan keahlian persatuan.' 
-                : 'Pantau statistik, urus permohonan keahlian, semak audit log, dan kemaskini hak akses pengguna.'}
+                ? 'Semak, tapis, luluskan, tolak dan urus senarai permohonan pendaftaran warga.' 
+                : 'Pantau statistik, urus permohonan warga, semak audit log, dan kemaskini hak akses pengguna.'}
             </p>
           </div>
           
@@ -1483,7 +1451,7 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
               onClick={() => { setActiveTab('permohonan'); setCurrentPage(1); }}
               className={`flex-1 px-1 py-1.5 md:px-3.5 md:py-2 rounded-lg font-black text-[9px] sm:text-[10px] md:text-xs transition-all cursor-pointer relative ${activeTab === 'permohonan' ? 'bg-indigo-600 text-white shadow-xs' : 'text-indigo-200 hover:bg-indigo-900/40'}`}
             >
-              Permohonan Keahlian
+              Permohonan Warga
               {stats.pendingApps > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 md:-top-1 md:-right-1 bg-rose-500 text-white font-extrabold text-[8px] w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse border border-indigo-900">
                   {stats.pendingApps}
@@ -1626,12 +1594,12 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-extrabold text-slate-900 text-sm">Kawalan Pendaftaran Keahlian (Daftar Ahli)</h3>
+                      <h3 className="font-extrabold text-slate-900 text-sm">Kawalan Pendaftaran Warga (Daftar Warga)</h3>
                       <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-black rounded-full border border-indigo-100 uppercase tracking-wider">
                         Admin Utama
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500">Kawalan kebenaran pendaftaran keahlian baharu persatuan pada ikon Daftar Ahli.</p>
+                    <p className="text-[11px] text-slate-500">Kawalan kebenaran pendaftaran warga baharu sekolah/persatuan pada ikon Daftar Warga.</p>
                   </div>
                 </div>
               </div>
@@ -1641,9 +1609,9 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
                   <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3 text-rose-900">
                     <AlertTriangle size={18} className="text-rose-600 shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <p className="text-xs font-black">Pendaftaran Keahlian Sedang Dinyahaktifkan (OFF)!</p>
+                      <p className="text-xs font-black">Pendaftaran Warga Sedang Dinyahaktifkan (OFF)!</p>
                       <p className="text-[11px] text-rose-800 leading-relaxed font-medium">
-                        Pengguna dan penduduk tidak akan dapat mengisi borang pendaftaran keahlian baharu sehingga anda mengaktifkannya semula.
+                        Pengguna dan warga tidak akan dapat mengisi borang pendaftaran warga baharu sehingga anda mengaktifkannya semula.
                       </p>
                     </div>
                   </div>
@@ -1652,7 +1620,7 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
                 <div className="flex items-center justify-between p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/60">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-slate-800">Status Pendaftaran Keahlian:</span>
+                      <span className="font-bold text-xs text-slate-800">Status Pendaftaran Warga:</span>
                       <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase ${
                         yuranConfig.enableMembershipRegistration !== false 
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
@@ -1663,8 +1631,8 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
                     </div>
                     <p className="text-[11px] text-slate-500">
                       {yuranConfig.enableMembershipRegistration !== false 
-                        ? 'Ikon "Daftar Ahli" aktif dan borang pendaftaran boleh diisi oleh pengguna.' 
-                        : 'Borang pendaftaran keahlian ditutup buat sementara waktu.'}
+                        ? 'Ikon "Daftar Warga" aktif dan borang pendaftaran boleh diisi oleh pengguna.' 
+                        : 'Borang pendaftaran warga ditutup buat sementara waktu.'}
                     </p>
                   </div>
 
@@ -2273,7 +2241,7 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
                 <button
                   onClick={handlePrintDaftarAhli}
                   className="p-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-indigo-600 rounded-xl cursor-pointer transition-all border border-slate-250 flex items-center justify-center shadow-xs"
-                  title="Cetak Buku Daftar Ahli (A4 Landscape)"
+                  title="Cetak Buku Daftar Warga (A4 Landscape)"
                 >
                   <Printer size={15} />
                 </button>
@@ -2287,7 +2255,7 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                   <input
                     type="text"
-                    placeholder="Cari nama pemohon, IC, no telefon, no rumah, no ahli..."
+                    placeholder="Cari nama pemohon, IC, no telefon, no rumah, no ID warga..."
                     value={appSearchQuery}
                     onChange={(e) => setAppSearchQuery(e.target.value)}
                     className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-24 py-2.5 text-xs font-bold text-slate-800 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
@@ -2340,7 +2308,7 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <span>No. Keahlian</span>
+                    <span>No. ID Warga</span>
                     {appSortOption === 'member_asc' && '↑'}
                     {appSortOption === 'member_desc' && '↓'}
                   </button>
@@ -2400,8 +2368,8 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
                 <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 mx-auto">
                   <FileText size={20} />
                 </div>
-                <p className="text-xs font-bold text-slate-700">Tiada permohonan keahlian dihantar lagi.</p>
-                <p className="text-[11px] text-slate-400 max-w-sm mx-auto">Apabila pelawat menghantar borang di bahagian Daftar Ahli, borang akan disenaraikan di sini untuk diluluskan.</p>
+                <p className="text-xs font-bold text-slate-700">Tiada permohonan pendaftaran warga dihantar lagi.</p>
+                <p className="text-[11px] text-slate-400 max-w-sm mx-auto">Apabila pelawat menghantar borang di bahagian Daftar Warga, borang akan disenaraikan di sini untuk diluluskan.</p>
               </div>
             ) : filteredApplications.length === 0 ? (
               <div className="bg-white rounded-2xl border border-slate-100 shadow-xs p-12 text-center space-y-2">
@@ -2409,7 +2377,7 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
                   <Search size={20} />
                 </div>
                 <p className="text-xs font-bold text-slate-700">Tiada permohonan yang sepadan.</p>
-                <p className="text-[11px] text-slate-400 max-w-sm mx-auto">Cuba cari nama, no. ahli atau kad pengenalan yang berlainan.</p>
+                <p className="text-[11px] text-slate-400 max-w-sm mx-auto">Cuba cari nama, no. ID warga atau kad pengenalan yang berlainan.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
@@ -2554,25 +2522,10 @@ export default function AdminSection({ isMobile = false, onBack }: AdminSectionP
                                 window.dispatchEvent(viewProfileEvent);
                               }}
                               className="p-1 sm:p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 rounded-lg cursor-pointer transition-colors border border-blue-200 flex items-center justify-center shrink-0"
-                              title="Lihat Profil Ahli"
+                              title="Lihat Profil Warga"
                             >
                               <ExternalLink size={13} className="sm:w-3.5 sm:h-3.5" />
                             </button>
-
-                            {/* Member Card PDF Button */}
-                            {(app.status === 'Approved' || app.status === 'Diluluskan' || app.memberNo || applicantUser?.memberNo) && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDownloadMemberCard(app, applicantUser, 'pdf');
-                                }}
-                                disabled={downloadingAppId === app.id}
-                                className="p-1 sm:p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg cursor-pointer transition-colors border border-emerald-200 flex items-center justify-center disabled:opacity-50 shrink-0"
-                                title="Muat Turun Sijil & Kad Keahlian Rasmi (PDF A4)"
-                              >
-                                {downloadingAppId === app.id ? <Loader2 size={13} className="animate-spin sm:w-3.5 sm:h-3.5" /> : <CreditCard size={13} className="sm:w-3.5 sm:h-3.5" />}
-                              </button>
-                            )}
 
                             {/* Send Approval Email Button */}
                             {(app.status === 'Approved' || app.status === 'Diluluskan' || app.status === 'Diluluskan Keahlian' || memberNo) && (app.email || applicantUser?.email) && (

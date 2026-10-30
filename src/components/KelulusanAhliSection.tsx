@@ -6,7 +6,6 @@ import {
   ChevronUp, ChevronDown, Edit, Loader2, ArrowUpDown, CreditCard, Download,
   AlertCircle, HelpCircle, Mail, Users
 } from 'lucide-react';
-import { downloadMembershipCardPdf, downloadMembershipCardImage, MembershipCardData } from '../utils/membershipCardHelper';
 import { sendMembershipApprovalEmail } from '../utils/notificationHelper';
 
 interface KelulusanAhliSectionProps {
@@ -105,7 +104,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
       });
 
       if (result.success) {
-        triggerSnackbar(`Emel pengesahan kelulusan keahlian berjaya dihantar ke ${targetEmail}!`, 'success');
+        triggerSnackbar(`Emel pengesahan kelulusan pendaftaran warga berjaya dihantar ke ${targetEmail}!`, 'success');
       } else {
         triggerSnackbar(result.error || 'Gagal menghantar emel kelulusan.', 'error');
       }
@@ -117,36 +116,6 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
     }
   };
 
-  const handleDownloadMemberCard = async (app: MembershipApplication, applicantUser: AppUser | undefined, type: 'pdf' | 'png') => {
-    try {
-      setDownloadingAppId(app.id);
-      const cardData: MembershipCardData = {
-        memberNo: app.memberNo || applicantUser?.memberNo || 'PTMF2-AHLI',
-        name: app.name || applicantUser?.displayName || 'Ahli Persatuan',
-        role: applicantUser?.role || 'Ahli Biasa',
-        noRumah: app.noRumah || applicantUser?.noRumah || '',
-        icNumber: app.icNumber || applicantUser?.icNumber || '',
-        phone: app.phone || applicantUser?.phoneNumber || '',
-        email: app.email || applicantUser?.email || '',
-        address: app.address || applicantUser?.address || '',
-        statusKediaman: (applicantUser?.statusKediaman || app.statusKediaman || 'Pemilik').toLowerCase().includes('penyewa') ? 'Penyewa' : 'Pemilik (Sendiri)',
-        avatarUrl: applicantUser?.photoURL || undefined
-      };
-
-      if (type === 'pdf') {
-        await downloadMembershipCardPdf(cardData);
-        triggerSnackbar(`Sijil & kad keahlian rasmi bagi ${app.name} berjaya dimuat turun (PDF)!`, 'success');
-      } else {
-        await downloadMembershipCardImage(cardData);
-        triggerSnackbar(`Gambar kad keahlian rasmi bagi ${app.name} berjaya dimuat turun (PNG)!`, 'success');
-      }
-    } catch (err: any) {
-      console.error('Ralat muat turun kad keahlian:', err);
-      triggerSnackbar('Gagal memuat turun kad keahlian: ' + (err?.message || 'Sila cuba lagi.'), 'error');
-    } finally {
-      setDownloadingAppId(null);
-    }
-  };
 
   const triggerSnackbar = (msg: string, type: 'success' | 'error') => {
     setSnackbar({ show: true, msg, type });
@@ -186,9 +155,9 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
     try {
       await updateApplicationStatus(statusEditApp.id, statusEditApp.uid, selectedStatus, selectedType);
       if (selectedStatus === 'Diluluskan Keahlian' || selectedStatus === 'Diluluskan') {
-        triggerSnackbar('Status keahlian berjaya diluluskan, notifikasi push & emel kelulusan dihantar!', 'success');
+        triggerSnackbar('Status pendaftaran warga berjaya diluluskan, notifikasi push & emel kelulusan dihantar!', 'success');
       } else {
-        triggerSnackbar('Status keahlian berjaya dikemaskini!', 'success');
+        triggerSnackbar('Status pendaftaran warga berjaya dikemaskini!', 'success');
       }
       setStatusEditApp(null);
     } catch (err: any) {
@@ -202,8 +171,8 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
     setSelectedAppType('Ahli Biasa');
     setConfirmDialog({
       show: true,
-      title: 'Meluluskan Permohonan Keahlian',
-      message: `Sila pilih jenis keahlian untuk meluluskan permohonan daripada ${app.name}:`,
+      title: 'Meluluskan Permohonan Warga',
+      message: `Sila pilih jenis warga untuk meluluskan permohonan daripada ${app.name}:`,
       actionType: 'approve',
       targetAppId: app.id,
       targetUid: app.uid
@@ -214,7 +183,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
     setRejectionRemarks('');
     setConfirmDialog({
       show: true,
-      title: 'Menolak Permohonan Keahlian',
+      title: 'Menolak Permohonan Warga',
       message: `Sila masukkan ulasan atau sebab penolakan permohonan ${app.name}:`,
       actionType: 'reject',
       targetAppId: app.id,
@@ -425,7 +394,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      alert('Sila benarkan tetingkap timbul (pop-ups) untuk mencetak buku daftar ahli ini.');
+      alert('Sila benarkan tetingkap timbul (pop-ups) untuk mencetak buku daftar warga ini.');
       return;
     }
 
@@ -503,7 +472,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>Buku Rekod Daftar Ahli Persatuan | PTMF2</title>
+  <title>Buku Rekod Daftar Warga Sekolah | SMAUJ</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
@@ -538,7 +507,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
   <div class="w-[297mm] mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-lg min-h-[210mm] flex flex-col justify-between print:m-0 print:rounded-none print:shadow-none print:border-none">
     
     <div class="no-print flex justify-between items-center mb-6 pb-4 border-b border-slate-200">
-      <h1 class="text-sm font-bold text-slate-800">Pratinjau Cetakan Buku Daftar Ahli (Landscape)</h1>
+      <h1 class="text-sm font-bold text-slate-800">Pratinjau Cetakan Buku Daftar Warga (Landscape)</h1>
       <button onclick="window.print()" class="px-5 py-2 bg-slate-800 text-white text-xs font-black rounded-lg hover:bg-slate-700 transition-all cursor-pointer">
         CETAK SEKARANG
       </button>
@@ -548,8 +517,8 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
       <div class="flex justify-between items-start gap-4">
         <div class="flex items-center gap-4">
           <div>
-            <p class="text-[10px] font-black tracking-widest uppercase opacity-75">BUKU REKOD DAFTAR AHLI PERSATUAN</p>
-            <h1 class="text-lg font-black leading-tight tracking-tight">PERSATUAN PENDUDUK TAMAN MUSTARI FASA 2</h1>
+            <p class="text-[10px] font-black tracking-widest uppercase opacity-75">BUKU REKOD DAFTAR WARGA SEKOLAH</p>
+            <h1 class="text-lg font-black leading-tight tracking-tight">SEKOLAH MENENGAH AGAMA ULU JEMPOL</h1>
             <p class="text-xs font-bold text-slate-500">Batu Kikir, Negeri Sembilan</p>
           </div>
         </div>
@@ -575,13 +544,13 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
           <thead>
             <tr class="bg-slate-800 text-white text-[9px] font-black uppercase tracking-wider border-b border-slate-700">
               <th class="px-3 py-2 text-center w-[40px]">Bil.</th>
-              <th class="px-3 py-2 w-[110px]">No. Ahli</th>
+              <th class="px-3 py-2 w-[110px]">No. ID Warga</th>
               <th class="px-3 py-2">Nama Penuh Pemohon</th>
               <th class="px-3 py-2 w-[110px]">No. Kad Pengenalan</th>
               <th class="px-3 py-2 w-[100px]">No. Telefon</th>
               <th class="px-3 py-2">Alamat & No. Rumah</th>
               <th class="px-3 py-2 text-center w-[90px]">Kediaman</th>
-              <th class="px-3 py-2 text-center w-[100px]">Jenis Keahlian</th>
+              <th class="px-3 py-2 text-center w-[100px]">Jenis Warga</th>
               <th class="px-3 py-2 text-center w-[100px]">Tarikh Lulus</th>
               <th class="px-3 py-2 text-center w-[90px]">Status</th>
             </tr>
@@ -633,7 +602,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
         <div className="space-y-1.5">
           <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Akses Ditolak</h2>
           <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-            Halaman Kelulusan Ahli ini terhad untuk pentadbir persatuan (Setiausaha, Penolong Setiausaha, Bendahari, Pengerusi, dan Admin Utama) sahaja.
+            Halaman Kelulusan Warga ini terhad untuk pentadbir sekolah/persatuan (Setiausaha, Penolong Setiausaha, Bendahari, Pengerusi, dan Admin Utama) sahaja.
           </p>
         </div>
         {onBack && (
@@ -654,9 +623,9 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 sm:pb-4 border-b border-slate-100">
         <div>
-          <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">Kelulusan Ahli Baru</h2>
+          <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">Kelulusan Warga Baru</h2>
           <p className="text-xs font-semibold text-slate-500 mt-0.5 sm:mt-1">
-            Urus, semak dan sahkan permohonan keahlian baru secara berpusat. (Akses: Setiausaha / Naib Setiausaha)
+            Urus, semak dan sahkan permohonan warga baru secara berpusat. (Akses: Setiausaha / Naib Setiausaha)
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
@@ -674,7 +643,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
           <button
             onClick={handlePrintDaftarAhli}
             className="p-2 sm:p-2.5 bg-white hover:bg-slate-50 text-slate-600 hover:text-indigo-600 rounded-xl cursor-pointer transition-all border border-slate-200 flex items-center justify-center shadow-xs shrink-0"
-            title="Cetak Buku Daftar Ahli"
+            title="Cetak Buku Daftar Warga"
           >
             <Printer size={16} />
           </button>
@@ -688,7 +657,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input
               type="text"
-              placeholder="Cari nama pemohon, IC, no telefon, no rumah, no ahli..."
+              placeholder="Cari nama pemohon, IC, no telefon, no rumah, no ID warga..."
               value={appSearchQuery}
               onChange={(e) => setAppSearchQuery(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-24 py-3 text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors shadow-xs"
@@ -741,7 +710,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
             >
-              <span>No. Keahlian</span>
+              <span>No. ID Warga</span>
               {appSortOption === 'member_asc' && '↑'}
               {appSortOption === 'member_desc' && '↓'}
             </button>
@@ -801,8 +770,8 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
           <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-400 mx-auto shadow-sm">
             <FileText size={20} />
           </div>
-          <p className="text-xs font-bold text-slate-700">Tiada permohonan keahlian dihantar lagi.</p>
-          <p className="text-[11px] text-slate-400 max-w-sm mx-auto">Apabila pelawat menghantar borang pendaftaran, ia akan dipaparkan di sini.</p>
+          <p className="text-xs font-bold text-slate-700">Tiada permohonan pendaftaran warga dihantar lagi.</p>
+          <p className="text-[11px] text-slate-400 max-w-sm mx-auto">Apabila warga atau penjaga menghantar borang pendaftaran, ia akan dipaparkan di sini.</p>
         </div>
       ) : filteredApplications.length === 0 ? (
         <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center space-y-2">
@@ -838,7 +807,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
                     onClick={() => toggleAppExpand(app.id)}
                   >
                     <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center font-black text-slate-600 border border-slate-200 uppercase shrink-0">
-                      {effectiveNickname ? effectiveNickname.slice(0,2) : (app.name ? app.name.slice(0,2) : 'AH')}
+                      {effectiveNickname ? effectiveNickname.slice(0,2) : (app.name ? app.name.slice(0,2) : 'WG')}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -869,7 +838,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
                         {memberNo && (app.status === 'Diluluskan' || app.status === 'Diluluskan Keahlian') && (
                           <>
                             <span className="text-slate-300">•</span>
-                            <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider">No. Ahli: {memberNo}</span>
+                            <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider">No. ID Warga: {memberNo}</span>
                           </>
                         )}
                       </div>
@@ -955,25 +924,11 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
                           window.dispatchEvent(viewProfileEvent);
                         }}
                         className="p-1 sm:p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 rounded-lg cursor-pointer transition-colors border border-blue-200 flex items-center justify-center shrink-0"
-                        title="Lihat Profil Ahli"
+                        title="Lihat Profil Warga"
                       >
                         <ExternalLink size={13} className="sm:w-3.5 sm:h-3.5" />
                       </button>
 
-                      {/* Member Card PDF Button */}
-                      {(app.status === 'Approved' || app.status === 'Diluluskan' || app.memberNo || applicantUser?.memberNo) && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownloadMemberCard(app, applicantUser, 'pdf');
-                          }}
-                          disabled={downloadingAppId === app.id}
-                          className="p-1 sm:p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg cursor-pointer transition-colors border border-emerald-200 flex items-center justify-center disabled:opacity-50 shrink-0"
-                          title="Muat Turun Sijil & Kad Keahlian Rasmi (PDF A4)"
-                        >
-                          {downloadingAppId === app.id ? <Loader2 size={13} className="animate-spin sm:w-3.5 sm:h-3.5" /> : <CreditCard size={13} className="sm:w-3.5 sm:h-3.5" />}
-                        </button>
-                      )}
 
                       {/* Send Approval Email Button */}
                       {(app.status === 'Approved' || app.status === 'Diluluskan' || app.status === 'Diluluskan Keahlian' || memberNo) && (app.email || applicantUser?.email) && (
@@ -1004,7 +959,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
                             setSelectedType(applicantUser?.membershipType || 'Ahli Biasa');
                           }}
                           className="p-1 sm:p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-indigo-600 rounded-lg cursor-pointer transition-colors border border-slate-200 shrink-0"
-                          title="Kemaskini Status Keahlian"
+                          title="Kemaskini Status Warga"
                         >
                           <Edit size={13} className="sm:w-3.5 sm:h-3.5" />
                         </button>
@@ -1315,7 +1270,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-extrabold tracking-tight text-slate-900 border-b border-slate-100 pb-2">
-              Kemaskini Status Keahlian
+              Kemaskini Status Warga
             </h3>
             <div className="space-y-4">
               <div>
@@ -1326,16 +1281,16 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                 >
                   <option value="Dalam Proses Semakan">Dalam Proses Semakan (Pending)</option>
-                  <option value="Diluluskan Keahlian">Diluluskan Keahlian (Aktif)</option>
-                  <option value="Ditolak Keahlian">Ditolak Keahlian</option>
-                  <option value="Dilucutkan Keahlian">Dilucutkan Keahlian</option>
-                  <option value="Dinyahaktifkan Keahlian">Dinyahaktifkan Keahlian</option>
+                  <option value="Diluluskan Keahlian">Diluluskan Warga (Aktif)</option>
+                  <option value="Ditolak Keahlian">Ditolak Permohonan Warga</option>
+                  <option value="Dilucutkan Keahlian">Dilucutkan Status Warga</option>
+                  <option value="Dinyahaktifkan Keahlian">Dinyahaktifkan Status Warga</option>
                 </select>
               </div>
 
               {(selectedStatus === 'Diluluskan Keahlian' || selectedStatus === 'Diluluskan') && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Pilih Jenis Keahlian</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Pilih Jenis Warga</label>
                   <select
                     value={selectedType}
                     onChange={(e) => setSelectedType(e.target.value)}
@@ -1345,7 +1300,7 @@ export default function KelulusanAhliSection({ onBack }: KelulusanAhliSectionPro
                     <option value="MURID">MURID (Pelajar SMAUJ)</option>
                     <option value="IBU BAPA">IBU BAPA (Penjaga Pelajar)</option>
                     <option value="ADMIN UTAMA">ADMIN UTAMA (Pentadbir)</option>
-                    <option value="Ahli Biasa">Ahli Biasa</option>
+                    <option value="Ahli Biasa">Warga Biasa</option>
                   </select>
                 </div>
               )}

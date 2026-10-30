@@ -1107,7 +1107,7 @@ export default function DokumenSection({ isMobile, hasCommitteeAccess = false, o
           </div>
           <h2 className="text-xl font-extrabold text-slate-900 mb-2">Akses Terhad</h2>
           <p className="text-sm text-slate-500 leading-relaxed">
-            Halaman Dokumen Persatuan ini hanya boleh diakses oleh peranan **Admin Utama, Pengerusi, Naib Pengerusi, Setiausaha, Naib/Penolong Setiausaha,** dan **Bendahari** sahaja.
+            Halaman Dokumen Sekolah ini hanya boleh diakses oleh peranan **Admin Utama, Pengerusi, Naib Pengerusi, Setiausaha, Naib/Penolong Setiausaha,** dan **Bendahari** sahaja.
           </p>
         </div>
       </div>
@@ -1278,7 +1278,7 @@ export default function DokumenSection({ isMobile, hasCommitteeAccess = false, o
                   <Folder className="w-16 h-16 text-slate-300 mb-4 stroke-[1.5]" />
                   <h3 className="font-bold text-slate-700 text-lg">Tiada Folder Dijumpai</h3>
                   <p className="text-slate-400 text-sm mt-1 max-w-sm">
-                    {searchTerm ? 'Tiada folder yang menepati kata carian anda. Sila cuba kata kunci lain.' : 'Sistem dokumen persatuan belum mempunyai folder. Hubungi urusetia untuk mencipta folder dokumen.'}
+                    {searchTerm ? 'Tiada folder yang menepati kata carian anda. Sila cuba kata kunci lain.' : 'Sistem dokumen sekolah belum mempunyai folder. Hubungi urusetia untuk mencipta folder dokumen.'}
                   </p>
                   {canWrite && !searchTerm && (
                     <button

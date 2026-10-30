@@ -11,7 +11,6 @@ import { resizeImage, uploadImageToStorage, saveTempUploadCache, getTempUploadCa
 import { checkNotificationSupport, registerServiceWorker, subscribeUserToPush } from '../utils/notificationHelper';
 import { Bell, BellOff } from 'lucide-react';
 import { CachedImage } from './CachedImage';
-import { downloadMembershipCardImage, downloadMembershipCardPdf, MembershipCardData } from '../utils/membershipCardHelper';
 
 interface FamilyMember {
   id: string;
@@ -1342,39 +1341,6 @@ export default function ProfileSection({
   const bakiKhairatSemasa = totalKhairatTerkumpul - totalKhairatPengeluaran;
   const khairatBalance = bakiKhairatSemasa;
 
-  // Membership Card Download states
-  const [showMembershipCardModal, setShowMembershipCardModal] = useState(false);
-  const [downloadingCardType, setDownloadingCardType] = useState<'png' | 'pdf' | null>(null);
-  const [copiedCardMemberNo, setCopiedCardMemberNo] = useState(false);
-
-  const handleDownloadCard = async (type: 'png' | 'pdf') => {
-    try {
-      setDownloadingCardType(type);
-      const cardData: MembershipCardData = {
-        memberNo: displayedMemberNo !== '-' ? displayedMemberNo : (currentUserDoc?.memberNo || 'SMAUJ-AHLI'),
-        name: displayedDisplayName !== '-' ? displayedDisplayName : currentProfileName,
-        role: currentProfileRole,
-        noRumah: displayedHouseNumber !== '-' ? displayedHouseNumber : '',
-        icNumber: displayedIcNumber !== '-' ? displayedIcNumber : '',
-        phone: displayedPhone !== '-' ? displayedPhone : '',
-        email: displayedEmail !== '-' ? displayedEmail : '',
-        address: displayedAddress !== '-' ? displayedAddress : '',
-        statusKediaman: displayedOwnershipType,
-        avatarUrl: currentUserDoc?.uploadedProfileImageUrl || currentUserDoc?.photoURL || firebaseUser?.photoURL || undefined
-      };
-
-      if (type === 'png') {
-        await downloadMembershipCardImage(cardData);
-      } else {
-        await downloadMembershipCardPdf(cardData);
-      }
-    } catch (err: any) {
-      console.error('Ralat muat turun kad keahlian:', err);
-      alert('Ralat semasa menjana kad keahlian: ' + (err?.message || 'Sila cuba sebentar lagi.'));
-    } finally {
-      setDownloadingCardType(null);
-    }
-  };
 
   // --- Intro Details (Butiran Seterusnya) ---
 
@@ -2559,15 +2525,15 @@ export default function ProfileSection({
                   )}
                 </div>
 
-                {/* Maklumat Keahlian */}
+                {/* Maklumat Warga */}
                 <div className="space-y-3 border-t border-gray-100 pt-4 select-none">
                   <h4 className="font-bold text-gray-900 text-xs flex items-center gap-1.5">
                     <Award size={14} className="text-indigo-600" />
-                    <span>Maklumat Keahlian</span>
+                    <span>Maklumat Warga</span>
                   </h4>
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-2.5">
                     <div className="flex justify-between items-start py-1.5 border-b border-gray-200/40">
-                      <span className="text-gray-500 font-medium">No. Ahli (unique id):</span>
+                      <span className="text-gray-500 font-medium">No. ID Warga:</span>
                       <span className="font-bold text-gray-900 font-mono text-right">{displayedMemberNo}</span>
                     </div>
                     <div className="flex justify-between items-start py-1.5 border-b border-gray-200/40">
@@ -2600,13 +2566,13 @@ export default function ProfileSection({
                       <span className="font-semibold text-gray-900 text-right max-w-[180px] leading-relaxed">{displayedAddress}</span>
                     </div>
                     <div className="flex justify-between items-start py-1.5 border-b border-gray-200/40">
-                      <span className="text-gray-500 font-medium">Tarikh Kelulusan Keahlian:</span>
+                      <span className="text-gray-500 font-medium">Tarikh Kelulusan Warga:</span>
                       <span className="font-semibold text-gray-900 text-right">
                         {displayedApprovedAt}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-1.5 border-b border-gray-200/40">
-                      <span className="text-gray-500 font-medium">Jenis Keahlian:</span>
+                      <span className="text-gray-500 font-medium">Jenis Warga:</span>
                       <span className="font-bold text-xs text-indigo-700 bg-indigo-50 border border-indigo-100/60 px-2 py-0.5 rounded-md text-right">{displayedMembershipType}</span>
                     </div>
                     <div className="flex justify-between items-center py-1.5">
@@ -2626,44 +2592,13 @@ export default function ProfileSection({
                         ) : displayedApprovalStatus === 'Approved' ? (
                           <>
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>Aktif</span>
+                            <span>Warga Aktif</span>
                           </>
                         ) : (
-                          <span>Belum Daftar</span>
+                          <span>Belum Daftar Warga</span>
                         )}
                       </span>
                     </div>
-
-                    {((displayedApprovalStatus === 'Approved' || displayedMemberNo !== '-') && !isUserKuiri) && (
-                      <div className="pt-2.5 border-t border-gray-200/40 flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
-                          <CheckCircle2 size={12} className="text-emerald-600" />
-                          <span>Kad Keahlian Rasmi Sah</span>
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleDownloadCard('png')}
-                            disabled={downloadingCardType !== null}
-                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-md text-[10px] font-extrabold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
-                            title="Muat Turun Fail Gambar Kad PNG"
-                          >
-                            {downloadingCardType === 'png' ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
-                            <span>Muat Turun (PNG)</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDownloadCard('pdf')}
-                            disabled={downloadingCardType !== null}
-                            className="px-2.5 py-1.5 bg-teal-700 hover:bg-teal-800 active:scale-[0.98] text-white rounded-md text-[10px] font-extrabold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
-                            title="Muat Turun Sijil & Kad PDF A4"
-                          >
-                            {downloadingCardType === 'pdf' ? <Loader2 size={11} className="animate-spin" /> : <FileText size={11} />}
-                            <span>Muat Turun (PDF)</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -3026,175 +2961,6 @@ export default function ProfileSection({
         </div>
       )}
 
-      {/* Modal Kad Keahlian Rasmi Persatuan */}
-      {showMembershipCardModal && (
-        <div 
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
-          onClick={() => setShowMembershipCardModal(false)}
-        >
-          <div 
-            className="relative w-full max-w-xl bg-slate-900 border border-emerald-500/30 rounded-3xl p-5 sm:p-7 text-white shadow-2xl space-y-5 animate-in zoom-in-95 duration-200 my-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
-              <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-                  <ShieldCheck size={14} /> Dokumen Pengenalan Sah
-                </span>
-                <h3 className="text-lg font-black text-white tracking-tight">
-                  Kad Pengenalan Digital Rasmi
-                </h3>
-                <p className="text-xs text-slate-300">
-                  Sekolah Menengah Agama Ulu Jempol • Kod: NFT6001
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowMembershipCardModal(false)}
-                className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
-                title="Tutup"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Visual Digital Card Preview */}
-            <div className={`relative overflow-hidden rounded-2xl ${isUserKuiri ? 'bg-gradient-to-br from-amber-600 via-orange-700 to-amber-950 border-amber-400/50' : 'bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-950 border-emerald-400/40'} p-5 border shadow-xl space-y-4`}>
-              <div className="flex items-start justify-between gap-3 border-b border-white/20 pb-3">
-                <div>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-200">
-                    {isUserKuiri ? 'KAD PENDAFTARAN (KUIRI)' : 'KAD PENGENALAN DIGITAL RASMI'}
-                  </span>
-                  <h4 className="font-black text-sm text-white">
-                    Sekolah Menengah Agama Ulu Jempol
-                  </h4>
-                  <p className="text-[9px] text-amber-100/90 font-mono">Kod Sekolah: NFT6001 | Batu Kikir, N. Sembilan</p>
-                </div>
-                {isUserKuiri ? (
-                  <div className="bg-amber-400/30 border border-amber-300 rounded-full px-2.5 py-0.5 flex items-center gap-1 shadow-xs animate-pulse">
-                    <AlertTriangle size={12} className="text-amber-200" />
-                    <span className="text-[10px] font-black text-white">KUIRI</span>
-                  </div>
-                ) : (
-                  <div className="bg-emerald-500/40 border border-emerald-300/50 rounded-full px-2.5 py-0.5 flex items-center gap-1 shadow-xs">
-                    <CheckCircle2 size={12} className="text-emerald-200" />
-                    <span className="text-[10px] font-black text-white">AKTIF</span>
-                  </div>
-                )}
-              </div>
-
-              {/* No Ahli Display */}
-              <div className="bg-black/30 rounded-xl p-3 border border-white/15 flex items-center justify-between">
-                <div>
-                  <span className="text-[9px] font-bold text-emerald-200 uppercase block">No. ID / Pendaftaran</span>
-                  <span className="font-mono text-lg font-black text-white tracking-widest">
-                    {displayedMemberNo !== '-' ? displayedMemberNo : (currentUserDoc?.memberNo || 'SMAUJ-2026-SAH')}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const no = displayedMemberNo !== '-' ? displayedMemberNo : (currentUserDoc?.memberNo || 'SMAUJ-2026-SAH');
-                    if (navigator?.clipboard) {
-                      navigator.clipboard.writeText(no);
-                      setCopiedCardMemberNo(true);
-                      setTimeout(() => setCopiedCardMemberNo(false), 2000);
-                    }
-                  }}
-                  className="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white rounded-lg text-[10px] font-extrabold flex items-center gap-1 cursor-pointer transition-colors"
-                >
-                  {copiedCardMemberNo ? (
-                    <>
-                      <Check size={11} className="text-emerald-300" />
-                      <span>Disalin</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy size={11} />
-                      <span>Salin</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Member Details */}
-              <div className="grid grid-cols-2 gap-2.5 text-xs pt-1">
-                <div>
-                  <span className="text-[9px] text-emerald-200/80 font-bold uppercase block">Nama Ahli</span>
-                  <span className="font-extrabold text-white block uppercase truncate">
-                    {displayedDisplayName !== '-' ? displayedDisplayName : currentProfileName}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[9px] text-emerald-200/80 font-bold uppercase block">Jawatan</span>
-                  <span className="font-bold text-emerald-100 block truncate">{currentProfileRole}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] text-emerald-200/80 font-bold uppercase block">No. Rumah</span>
-                  <span className="font-extrabold text-white block">
-                    {displayedHouseNumber !== '-' ? `No. ${displayedHouseNumber}` : '-'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[9px] text-emerald-200/80 font-bold uppercase block">No. Kad Pengenalan</span>
-                  <span className="font-mono font-bold text-emerald-100 block">{displayedIcNumber}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Download Action Buttons */}
-            <div className="space-y-3 pt-2">
-              <span className="text-xs font-bold text-slate-300 block">
-                Pilih format muat turun untuk simpanan ahli:
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleDownloadCard('png')}
-                  disabled={downloadingCardType !== null}
-                  className="py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-950/40 flex items-center justify-center gap-2 transition-all cursor-pointer border border-emerald-400/30 disabled:opacity-50"
-                >
-                  {downloadingCardType === 'png' ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin text-white" />
-                      <span>Menjana Gambar...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download size={16} />
-                      <span>Muat Turun Gambar (PNG)</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleDownloadCard('pdf')}
-                  disabled={downloadingCardType !== null}
-                  className="py-3 px-4 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 active:scale-[0.98] text-white font-extrabold text-xs rounded-xl shadow-lg shadow-teal-950/40 flex items-center justify-center gap-2 transition-all cursor-pointer border border-teal-400/30 disabled:opacity-50"
-                >
-                  {downloadingCardType === 'pdf' ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin text-white" />
-                      <span>Menjana Sijil PDF...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FileText size={16} />
-                      <span>Muat Turun Sijil & Kad (PDF A4)</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3 text-[11px] text-slate-300 space-y-1">
-                <p>💡 <strong>Panduan Simpanan:</strong> Fail PNG sesuai disimpan di galeri telefon pintar untuk bukti keahlian digital bila-bila masa. Fail PDF A4 sedia dicetak dengan garisan gunting untuk dompet fizikal.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

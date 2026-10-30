@@ -969,7 +969,7 @@ export default function DesktopView({
       title: "Pentadbiran",
       items: [
         ...(hasAdminAccess ? [{ id: 'admin', label: 'Panel Admin', icon: Shield, locked: !hasAdminAccess }] : []),
-        ...(hasKelulusanAhliAccess ? [{ id: 'kelulusan-ahli', label: 'Kelulusan Ahli', icon: CheckCircle2, locked: !hasKelulusanAhliAccess }] : []),
+        ...(hasKelulusanAhliAccess ? [{ id: 'kelulusan-ahli', label: 'Kelulusan Warga', icon: CheckCircle2, locked: !hasKelulusanAhliAccess }] : []),
       ]
     }] : []),
     {
@@ -992,7 +992,7 @@ export default function DesktopView({
     {
       title: "Dokumen & Sumber",
       items: [
-        { id: 'dokumen', label: 'Dokumen Persatuan', icon: Folder, locked: !hasDokumenAccess },
+        { id: 'dokumen', label: 'Dokumen Sekolah', icon: Folder, locked: !hasDokumenAccess },
         { id: 'surat', label: 'Jana Surat', icon: FileText, locked: !hasSuratAccess },
         { id: 'minit-mesyuarat', label: 'Minit Mesyuarat', icon: FileCheck, locked: !hasMinitAccess },
         { id: 'notis-panggilan', label: 'Notis Panggilan', icon: Bell, locked: !hasNotisPanggilanAccess },
@@ -1140,10 +1140,10 @@ export default function DesktopView({
             </button>
           )}
 
-          {/* Status Keahlian */}
+          {/* Status Warga */}
           <div className="bg-indigo-900/30 rounded-xl p-3 border border-indigo-900/40 space-y-1">
             <span className="text-[9px] text-indigo-400 font-extrabold block uppercase tracking-wider">
-              Status Keahlian
+              Status Warga
             </span>
             <div className="flex items-center justify-between">
               <span className="text-xs text-indigo-100 font-bold truncate max-w-[120px]">
@@ -1179,7 +1179,7 @@ export default function DesktopView({
                 } else {
                   return (
                     <span className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-xs uppercase tracking-wide bg-slate-500/20 text-slate-300 border border-slate-500/20">
-                      Bukan Ahli
+                      Bukan Warga
                     </span>
                   );
                 }
@@ -1909,17 +1909,17 @@ export default function DesktopView({
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="bg-white/20 text-white text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-white/30">
-                              NOTIS PERMOHONAN KEAHLIAN
+                              NOTIS PERMOHONAN WARGA
                             </span>
                             <span className="bg-amber-950/70 text-amber-200 text-[9px] font-extrabold px-2.5 py-0.5 rounded-full border border-amber-400/40">
                               STATUS: KUIRI (PERLU KEMASKINI)
                             </span>
                           </div>
                           <h3 className="font-black text-base text-white leading-tight">
-                            Permohonan Keahlian Anda Memerlukan Kemaskini
+                            Permohonan Pendaftaran Warga Memerlukan Kemaskini
                           </h3>
                           <p className="text-xs text-amber-50 leading-relaxed max-w-2xl font-medium">
-                            Pihak pentadbir telah menyemak permohonan keahlian bagi rumah <strong>No. {currentUserDoc?.noRumah || kuiriApp?.noRumah || '-'}</strong> dan mendapati terdapat butiran pendaftaran yang belum lengkap atau gagal (contoh: Nama Penuh tidak lengkap, maklumat Isi Rumah tidak dinyatakan).
+                            Pihak pentadbir telah menyemak permohonan pendaftaran warga bagi rumah <strong>No. {currentUserDoc?.noRumah || kuiriApp?.noRumah || '-'}</strong> dan mendapati terdapat butiran pendaftaran yang belum lengkap atau gagal (contoh: Nama Penuh tidak lengkap, maklumat Isi Rumah tidak dinyatakan).
                           </p>
                           {kuiriRemarks && (
                             <p className="text-[11px] text-amber-950 font-bold bg-white/95 p-2 rounded-xl mt-1.5 border border-amber-200 inline-block">
@@ -2147,7 +2147,7 @@ export default function DesktopView({
                             <Folder size={18} />
                           </div>
                           <span className="text-[10px] font-bold text-gray-700 leading-tight group-hover:text-blue-600">
-                            Dokumen Persatuan
+                            Dokumen Sekolah
                           </span>
                         </button>
 
@@ -2206,7 +2206,7 @@ export default function DesktopView({
                               <CheckCircle2 size={18} />
                             </div>
                             <span className="text-[10px] font-bold text-gray-700 leading-tight group-hover:text-purple-600">
-                              Kelulusan Ahli
+                              Kelulusan Warga
                             </span>
                           </button>
                         )}
@@ -2289,7 +2289,7 @@ export default function DesktopView({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Left Column: Daftar Ahli & Events */}
                   <div className="space-y-6">
-                    {/* Daftar Ahli / Kad Keahlian Banner */}
+                    {/* Pengesahan Warga Banner */}
                     {isApprovedMember ? (
                       <div 
                         onClick={() => setCurrentView('daftar-ahli')}
@@ -2302,7 +2302,7 @@ export default function DesktopView({
                           <div className="space-y-1.5 text-white pr-10">
                             <div className="flex items-center gap-2">
                               <span className="px-2.5 py-0.5 bg-emerald-400/30 border border-emerald-300/40 text-emerald-100 text-[10px] font-black rounded-full uppercase tracking-wider flex items-center gap-1">
-                                <CheckCircle2 size={12} className="text-emerald-300" /> KEAHLIAN AKTIF
+                                <CheckCircle2 size={12} className="text-emerald-300" /> WARGA AKTIF
                               </span>
                               {currentUserDoc?.memberNo && (
                                 <span className="font-mono text-xs text-emerald-200 font-extrabold bg-black/20 px-2 py-0.5 rounded-md">
@@ -2311,10 +2311,10 @@ export default function DesktopView({
                               )}
                             </div>
                             <h3 className="font-extrabold text-lg flex items-center gap-2">
-                              Pengesahan & Kad Keahlian Rasmi <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                              Pengesahan Pendaftaran Warga Sekolah <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                             </h3>
                             <p className="text-xs font-medium text-emerald-100 leading-relaxed">
-                              Tahniah! Anda adalah warga sah Sekolah Menengah Agama Ulu Jempol. Klik untuk melihat dan memuat turun kad identiti rasmi untuk simpanan anda (PNG / PDF).
+                              Tahniah! Anda adalah warga sah Sekolah Menengah Agama Ulu Jempol. Klik untuk melihat butiran dan maklumat pendaftaran warga anda.
                             </p>
                           </div>
                         </div>
@@ -3078,7 +3078,7 @@ export default function DesktopView({
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <h2 className="font-extrabold text-2xl text-slate-900 tracking-tight">Daftar Ahli</h2>
+                <h2 className="font-extrabold text-2xl text-slate-900 tracking-tight">Daftar Warga</h2>
               </div>
               <DaftarAhliSection isMobile={false} />
             </div>
